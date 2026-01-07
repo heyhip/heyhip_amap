@@ -1,3 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.youthage.heyhip_amap">
+
+  <!-- 高德定位 Service（必须） -->
+  <application>
+      <service android:name="com.amap.api.location.APSService" android:exported="false" />
+  </application>
+
+
 </manifest>

@@ -47,6 +47,27 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+static const _channel = MethodChannel('heyhip_amap');
+
+  Future<void> testPermission() async {
+    final has =
+        await _channel.invokeMethod<bool>('hasLocationPermission');
+    debugPrint('已有权限: $has');
+
+    if (has != true) {
+      final granted = await _channel
+          .invokeMethod<bool>('requestLocationPermission');
+      debugPrint('申请结果: $granted');
+    }
+  }
+
+
+  void testLocation() async {
+    final location = await _heyhipAmapPlugin.getCurrentLocation();
+    print('定位结果: $location');
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -56,14 +77,35 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Column(children: [
+            Container(
+              height: 500,
+              child: AMapView(),
+            ),
+
               Text('Running on: $_platformVersion\n'),
 
               InkWell(
                 onTap: () {
-                  _heyhipAmapPlugin.init(apiKey: "dd", agreePrivacy: true);
+                  _heyhipAmapPlugin.init(apiKey: "1f92f4cb144f3dc30c27e1dd49543a6b", agreePrivacy: true);
                 },
-                child: Text('点击这里'),
-              )
+                child: Text('点击初始化地图'),
+              ),
+
+              InkWell(
+                onTap: () {
+                  testPermission();
+                },
+                child: Text('点击获取权限'),
+              ),
+
+              InkWell(
+                onTap: () {
+                  testLocation();
+                },
+                child: Text('点击获取定位'),
+              ),
+
+
           ],)
         ),
       ),

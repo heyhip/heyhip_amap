@@ -30,5 +30,8 @@ abstract class HeyhipAmapPlatform extends PlatformInterface {
   // 初始化
   Future<void> init({required String apiKey, required bool agreePrivacy});
 
+  // 获取当前定位
+  Future<Map<String, dynamic>?> getCurrentLocation();
+
 
 }

@@ -31,6 +31,15 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
 
   }
 
+  @override
+  Future<Map<String, dynamic>?> getCurrentLocation() async {
+    final result = await methodChannel.invokeMethod('getCurrentLocation');
+    return Map<String, dynamic>.from(result);
+  }
+
+
+
+
 
 
 }
