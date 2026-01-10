@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+
 
     <application
         android:label="heyhip_amap_example"
@@ -37,7 +41,7 @@
         <!-- 高德map 配置 -->
         <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="1f92f4cb144f3dc30c27e1dd49543a6b" />
+            android:value="8669320b0376e085d9f6eacc409e14dc" />
 
 
         

@@ -23,6 +23,10 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdate;
+import com.amap.api.maps.CameraUpdateFactory;
+import com.amap.api.maps.model.LatLng;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +56,8 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
 
+    FlutterEngineHolder.init(flutterPluginBinding.getBinaryMessenger());
+
     applicationContext = flutterPluginBinding.getApplicationContext();
 
     
@@ -77,20 +83,26 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
+      // case "moveCamera":
+      //   moveCamera(call, result);
+      //   break;
       case "hasLocationPermission":
             result.success(hasLocationPermission());
             break;
       case "requestLocationPermission":
           requestLocationPermission(result);
           break;
-      case "init":
-        handleInit(call, result);
-        break;
       case "getCurrentLocation":
         getCurrentLocation(result);
         break;
       case "getPlatformVersion":
         result.success("Android " + android.os.Build.VERSION.RELEASE);
+        break;
+      case "initKey":
+        handleInit(call, result);
+        break;
+      case "updatePrivacy":
+        handleUpdatePrivacy(call, result);
         break;
       default:
         result.notImplemented();
@@ -217,7 +229,7 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   // 地图初始化
   private void handleInit(MethodCall call, MethodChannel.Result result) {
     String apiKey = call.argument("apiKey");
-    Boolean agreePrivacy = call.argument("agreePrivacy");
+    // Boolean agreePrivacy = call.argument("agreePrivacy");
 
     if (apiKey == null || apiKey.isEmpty()) {
       result.error(
@@ -228,10 +240,10 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
       return;
     }
 
-    if (agreePrivacy == null || !agreePrivacy) {
+    if (applicationContext == null) {
       result.error(
-              "PRIVACY_NOT_AGREED",
-              "User has not agreed privacy policy",
+              "NO_CONTEXT",
+              "Application context not available",
               null
       );
       return;
@@ -248,14 +260,60 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
 
 
     // 高德地图初始化
+    try {
+      // ⚠️ 高德 10.x：Key 不需要代码设置
+      // 这里只是做一次合法性校验 & 占位
+      // 真正 Key 在 AndroidManifest.xml 的 meta-data
 
-    // 高德隐私合规（必须最先调用）
-    AMapLocationClient.updatePrivacyShow(applicationContext, true, true);
-    AMapLocationClient.updatePrivacyAgree(applicationContext, true);
-
-
-    result.success(null);
+      result.success(null);
+    } catch (Exception e) {
+      result.error("INIT_FAILED", e.getMessage(), null);
+    }
   }
+
+  // 隐私
+  private void handleUpdatePrivacy(MethodCall call, MethodChannel.Result result) {
+    Boolean hasContains = call.argument("hasContains");
+    Boolean hasShow = call.argument("hasShow");
+    Boolean hasAgree = call.argument("hasAgree");
+
+    if (hasContains == null || hasShow == null || hasAgree == null) {
+      result.error(
+              "INVALID_ARGS",
+              "Privacy arguments missing",
+              null
+      );
+      return;
+    }
+
+    if (applicationContext == null) {
+      result.error(
+              "NO_CONTEXT",
+              "Application context not available",
+              null
+      );
+      return;
+    }
+
+    try {
+      // ✅ 10.x SDK 必须顺序调用
+      AMapLocationClient.updatePrivacyShow(
+              applicationContext,
+              hasContains,
+              hasShow
+      );
+
+      AMapLocationClient.updatePrivacyAgree(
+              applicationContext,
+              hasAgree
+      );
+
+      result.success(null);
+    } catch (Exception e) {
+      result.error("PRIVACY_FAILED", e.getMessage(), null);
+    }
+  }
+
 
   // 获取当前定位
   private void getCurrentLocation(MethodChannel.Result result) {
@@ -326,6 +384,29 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
     }
   }
 
+  // // 移动
+  // private void moveCamera(MethodCall call, Result result) {
+  //
+  //   double lat = call.argument("latitude");
+  //   double lng = call.argument("longitude");
+  //   double zoom = ((Number) call.argument("zoom")).doubleValue();
+  //
+  //   // 目前只有一个地图，直接取第一个
+  //   AMap aMap = AMapPlatformView.MAPS.values().iterator().next();
+  //
+  //   if (aMap == null) {
+  //     result.error("NO_MAP", "Map not ready", null);
+  //     return;
+  //   }
+  //
+  //   CameraUpdate update = CameraUpdateFactory.newLatLngZoom(
+  //           new LatLng(lat, lng),
+  //           (float) zoom
+  //   );
+  //
+  //   aMap.animateCamera(update);
+  //   result.success(null);
+  // }
 
 
 }

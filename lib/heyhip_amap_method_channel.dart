@@ -16,19 +16,43 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
   }
 
   @override
-  Future<void> init({required String apiKey, required bool agreePrivacy}) async {
-    final Map<String, dynamic> params = {
-      'apiKey': apiKey,
-      'agreePrivacy': agreePrivacy,
-    };
-
+  Future<void> initKey({required String apiKey}) async {
     try {
-      await methodChannel.invokeMethod('init', params);
+      await methodChannel.invokeMethod('initKey', {
+        'apiKey': apiKey,
+      });
     } on PlatformException catch (e) {
       print(e.code);
       print(e.message);
     }
+  }
 
+  @override
+  Future<void> updatePrivacy({
+    required bool hasContains,
+    required bool hasShow,
+    required bool hasAgree,
+  }) async {
+    try {
+      await methodChannel.invokeMethod('updatePrivacy', {
+        'hasContains': hasContains,
+        'hasShow': hasShow,
+        'hasAgree': hasAgree,
+      });
+    } on PlatformException catch (e) {
+      print(e.code);
+      print(e.message);
+    }
+  }
+
+  @override
+  Future<bool> hasLocationPermission() async {
+    return await methodChannel.invokeMethod('hasLocationPermission');
+  }
+
+  @override
+  Future<bool> requestLocationPermission() async {
+    return await methodChannel.invokeMethod('requestLocationPermission');
   }
 
   @override
@@ -36,10 +60,6 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
     final result = await methodChannel.invokeMethod('getCurrentLocation');
     return Map<String, dynamic>.from(result);
   }
-
-
-
-
 
 
 }

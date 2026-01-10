@@ -3,8 +3,15 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/heyhip_amap.dart';
+import 'package:heyhip_amap/heyhip_amap_controller.dart';
 
 void main() {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "");
+  HeyhipAmap.updatePrivacy(hasAgree: true, hasShow: true, hasContains: true);
+
   runApp(const MyApp());
 }
 
@@ -17,7 +24,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _heyhipAmapPlugin = HeyhipAmap();
 
   @override
   void initState() {
@@ -32,14 +38,11 @@ class _MyAppState extends State<MyApp> {
     // We also handle the message potentially returning null.
     try {
       platformVersion =
-          await _heyhipAmapPlugin.getPlatformVersion() ?? 'Unknown platform version';
+          await HeyhipAmap.getPlatformVersion() ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
 
     setState(() {
@@ -47,26 +50,49 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-static const _channel = MethodChannel('heyhip_amap');
 
   Future<void> testPermission() async {
-    final has =
-        await _channel.invokeMethod<bool>('hasLocationPermission');
+    final has = await HeyhipAmap.hasLocationPermission();
     debugPrint('已有权限: $has');
 
-    if (has != true) {
-      final granted = await _channel
-          .invokeMethod<bool>('requestLocationPermission');
+    if (has != true){
+            final granted = await HeyhipAmap.requestLocationPermission();
       debugPrint('申请结果: $granted');
     }
+
   }
 
 
   void testLocation() async {
-    final location = await _heyhipAmapPlugin.getCurrentLocation();
+    final location = await HeyhipAmap.getCurrentLocation();
     print('定位结果: $location');
+    if (location != null) {
+      final latitude = location['latitude'] as double;
+      final longitude = location['longitude'] as double;
+
+      // HeyhipAmap.moveCamera(
+      //   latitude: latitude,
+      //   longitude: longitude,
+      //   zoom: 16,
+      // );
+
+      mapController.moveCamera(latitude: latitude, longitude: longitude, zoom: 14);
+
+    }
   }
 
+  void setZoom() async {
+    mapController.setZoom(18);
+  }
+
+  void getPosition() async {
+   final pos = await mapController.getCameraPosition();
+    print(pos);
+  }
+  
+
+  HeyhipAmapController mapController = HeyhipAmapController();
+  
 
   @override
   Widget build(BuildContext context) {
@@ -75,21 +101,26 @@ static const _channel = MethodChannel('heyhip_amap');
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
+        body: SingleChildScrollView(
+          child: Center(
           child: Column(children: [
             Container(
               height: 500,
-              child: AMapView(),
+              child: HeyhipAmapView(
+                // latitude: 30.477718,
+                // longitude: 104.085527,
+                // zoom: 14,
+                controller: mapController,
+                onMapCreated: () {
+                  mapController.onMapLoadFinish(() {
+                    print("地图完成");
+                  });
+                },
+              ),
             ),
 
               Text('Running on: $_platformVersion\n'),
 
-              InkWell(
-                onTap: () {
-                  _heyhipAmapPlugin.init(apiKey: "1f92f4cb144f3dc30c27e1dd49543a6b", agreePrivacy: true);
-                },
-                child: Text('点击初始化地图'),
-              ),
 
               InkWell(
                 onTap: () {
@@ -98,6 +129,7 @@ static const _channel = MethodChannel('heyhip_amap');
                 child: Text('点击获取权限'),
               ),
 
+              SizedBox(height: 20,),
               InkWell(
                 onTap: () {
                   testLocation();
@@ -105,9 +137,27 @@ static const _channel = MethodChannel('heyhip_amap');
                 child: Text('点击获取定位'),
               ),
 
+              SizedBox(height: 20,),
+              InkWell(
+                onTap: () {
+                  setZoom();
+                },
+                child: Text('点击设置zoom'),
+              ),
+
+              SizedBox(height: 20,),
+              InkWell(
+                onTap: () {
+                  getPosition();
+                },
+                child: Text('获取Pos'),
+              ),
+
+
 
           ],)
         ),
+        )
       ),
     );
   }

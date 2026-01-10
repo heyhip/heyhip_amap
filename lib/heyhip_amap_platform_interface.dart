@@ -28,10 +28,24 @@ abstract class HeyhipAmapPlatform extends PlatformInterface {
   }
 
   // 初始化
-  Future<void> init({required String apiKey, required bool agreePrivacy});
+  Future<void> initKey({required String apiKey});
+
+  /// 隐私合规
+  Future<void> updatePrivacy({
+    required bool hasContains,
+    required bool hasShow,
+    required bool hasAgree,
+  }) {
+    throw UnimplementedError('updatePrivacy() has not been implemented.');
+  }
+
+  // 是否有权限
+  Future<bool> hasLocationPermission();
+
+  // 请求权限
+  Future<bool> requestLocationPermission();
 
   // 获取当前定位
   Future<Map<String, dynamic>?> getCurrentLocation();
-
 
 }
