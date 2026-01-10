@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:heyhip_amap/amap_ui_settings.dart';
+import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/heyhip_amap.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
+import 'package:heyhip_amap/map_type.dart';
 
 void main() {
 
@@ -76,7 +79,8 @@ class _MyAppState extends State<MyApp> {
       //   zoom: 16,
       // );
 
-      mapController.moveCamera(latitude: latitude, longitude: longitude, zoom: 14);
+      // mapController.moveCamera(latitude: latitude, longitude: longitude, zoom: 14);
+      mapController.moveCamera(CameraPosition(target: LatLng(latitude, longitude)));
 
     }
   }
@@ -101,64 +105,77 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: SingleChildScrollView(
-          child: Center(
-          child: Column(children: [
-            Container(
-              height: 500,
-              child: HeyhipAmapView(
-                // latitude: 30.477718,
-                // longitude: 104.085527,
-                // zoom: 14,
-                controller: mapController,
-                onMapCreated: () {
-                  mapController.onMapLoadFinish(() {
-                    print("地图完成");
-                  });
-                },
-              ),
+        body: Column(
+  children: [
+    SizedBox(
+      height: 500,
+      child: HeyhipAmapView(
+        // mapType: MapType.satellite,
+        controller: mapController,
+        onMapCreated: () {
+          mapController.onMapLoadFinish(() {
+            print("地图完成");
+          });
+
+          mapController.onMapClick((latLng) {
+              print('点击地图：${latLng.latitude}, ${latLng.longitude}');
+              mapController.moveCamera(CameraPosition(target: latLng));
+            });
+
+            // mapController.onCameraIdle((position) {
+            //   print('中心点：${position.target.latitude}, ${position.target.longitude}');
+            // });
+
+             mapController.onCameraMove((position) {
+              print('持续移动：${position.target.latitude}, ${position.target.longitude}');
+            });
+
+            // mapController.onCameraMoveStart((position) {
+            //   print('开始移动${position.target.latitude}, ${position.target.longitude}');
+            // });
+
+        },
+        
+      ),
+    ),
+
+    Expanded(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Text('Running on: $_platformVersion\n'),
+
+            InkWell(
+              onTap: testPermission,
+              child: const Text('点击获取权限'),
             ),
 
-              Text('Running on: $_platformVersion\n'),
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: testLocation,
+              child: const Text('点击获取定位'),
+            ),
 
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: setZoom,
+              child: const Text('点击设置zoom'),
+            ),
 
-              InkWell(
-                onTap: () {
-                  testPermission();
-                },
-                child: Text('点击获取权限'),
-              ),
-
-              SizedBox(height: 20,),
-              InkWell(
-                onTap: () {
-                  testLocation();
-                },
-                child: Text('点击获取定位'),
-              ),
-
-              SizedBox(height: 20,),
-              InkWell(
-                onTap: () {
-                  setZoom();
-                },
-                child: Text('点击设置zoom'),
-              ),
-
-              SizedBox(height: 20,),
-              InkWell(
-                onTap: () {
-                  getPosition();
-                },
-                child: Text('获取Pos'),
-              ),
-
-
-
-          ],)
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: getPosition,
+              child: const Text('获取Pos'),
+            ),
+          ],
         ),
-        )
       ),
+    ),
+  ],
+),
+
+
+        ),
     );
   }
 }

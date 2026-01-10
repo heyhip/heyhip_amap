@@ -42,7 +42,6 @@ android {
     dependencies {
 
         // ✅ 高德
-        // implementation "com.amap.api:3dmap:10.0.600"
         implementation 'com.amap.api:3dmap:latest.integration'
 
 

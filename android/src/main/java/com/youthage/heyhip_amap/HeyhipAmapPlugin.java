@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -20,16 +21,14 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 
 import com.amap.api.location.AMapLocation;
+// import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
-import com.amap.api.maps.AMap;
-import com.amap.api.maps.CameraUpdate;
-import com.amap.api.maps.CameraUpdateFactory;
-import com.amap.api.maps.model.LatLng;
 
 import java.util.HashMap;
 import java.util.Map;
+import android.util.SparseArray;
 
 
 /** HeyhipAmapPlugin */
@@ -52,15 +51,22 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   private AMapLocationClient locationClient;
   private MethodChannel.Result locationResult;
 
+  // MapView 注册表
+  public static final SparseArray<AMapPlatformView> MAP_VIEWS = new SparseArray<>();
+
+  private static BinaryMessenger messenger;
+
+  public static BinaryMessenger getMessenger() {
+    return messenger;
+  }
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
 
-    FlutterEngineHolder.init(flutterPluginBinding.getBinaryMessenger());
+    messenger = flutterPluginBinding.getBinaryMessenger();
 
     applicationContext = flutterPluginBinding.getApplicationContext();
 
-    
     channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "heyhip_amap");
     channel.setMethodCallHandler(this);
 
@@ -71,21 +77,9 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
     );
   }
 
-  // @Override
-  // public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-  //   if (call.method.equals("getPlatformVersion")) {
-  //     result.success("Android " + android.os.Build.VERSION.RELEASE);
-  //   } else {
-  //     result.notImplemented();
-  //   }
-  // }
-
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
-      // case "moveCamera":
-      //   moveCamera(call, result);
-      //   break;
       case "hasLocationPermission":
             result.success(hasLocationPermission());
             break;
@@ -132,6 +126,11 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   public void onDetachedFromActivity() {
     activity = null;
 
+    // ⭐ 通知所有 MapView
+    for (int i = 0; i < MAP_VIEWS.size(); i++) {
+      MAP_VIEWS.valueAt(i).onPause();
+    }
+
     if (pendingResult != null) {
       pendingResult.error(
               "ACTIVITY_LOST",
@@ -150,6 +149,11 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
   @Override
   public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
     onAttachedToActivity(binding);
+
+    // ⭐ 恢复 MapView
+    for (int i = 0; i < MAP_VIEWS.size(); i++) {
+      MAP_VIEWS.valueAt(i).onResume();
+    }
   }
 
   @Override
@@ -383,30 +387,5 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
       result.error("LOCATION_EXCEPTION", e.getMessage(), null);
     }
   }
-
-  // // 移动
-  // private void moveCamera(MethodCall call, Result result) {
-  //
-  //   double lat = call.argument("latitude");
-  //   double lng = call.argument("longitude");
-  //   double zoom = ((Number) call.argument("zoom")).doubleValue();
-  //
-  //   // 目前只有一个地图，直接取第一个
-  //   AMap aMap = AMapPlatformView.MAPS.values().iterator().next();
-  //
-  //   if (aMap == null) {
-  //     result.error("NO_MAP", "Map not ready", null);
-  //     return;
-  //   }
-  //
-  //   CameraUpdate update = CameraUpdateFactory.newLatLngZoom(
-  //           new LatLng(lat, lng),
-  //           (float) zoom
-  //   );
-  //
-  //   aMap.animateCamera(update);
-  //   result.success(null);
-  // }
-
 
 }

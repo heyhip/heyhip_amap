@@ -5,10 +5,10 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import com.amap.api.maps.CameraUpdate;
+import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
-import com.amap.api.maps.AMap;
+import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
 
@@ -21,6 +21,7 @@ import io.flutter.plugin.platform.PlatformView;
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
 
+    private final int viewId;
     private final MapView mapView;
     private final AMap aMap;
     private final MethodChannel channel;
@@ -30,7 +31,19 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private Double initLongitude;
     private Float initZoom;
 
+    // 初始化地图类型
+    private Integer initMapType;
+
+    // 持续移动节流
+    private static final long CAMERA_MOVE_THROTTLE_MS = 120;
+    private long lastCameraMoveTime = 0;
+
+    // 自定义，用于有开始移动功能
+    private boolean isCameraMoving = false;
+
+
     public AMapPlatformView(Context context, int id, Map<String, Object> params) {
+        this.viewId = id;
 
         // 1️⃣ 创建 MapView
         mapView = new MapView(context);
@@ -39,9 +52,18 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         // 2️⃣ 获取 AMap 实例
         aMap = mapView.getMap();
 
+        // 监听地图完成
         aMap.setOnMapLoadedListener(new AMap.OnMapLoadedListener() {
             @Override
             public void onMapLoaded() {
+
+                // 地图类型
+                if (initMapType != null) {
+                    applyMapType(initMapType);
+                }
+
+                // ui设置
+                applyUiSettings(params);
 
                 // ⭐ 只有传了经纬度，才做初始化定位
                 if (initLatitude != null && initLongitude != null) {
@@ -61,26 +83,48 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             }
         });
 
-        // 3️⃣ 初始化地图参数
-        // if (params != null) {
-        //     double latitude = getDouble(params.get("latitude"), 39.90923);
-        //     double longitude = getDouble(params.get("longitude"), 116.397428);
-        //     float zoom = getFloat(params.get("zoom"), 15f);
-        //
-        //     CameraPosition position = new CameraPosition(
-        //             new LatLng(latitude, longitude),
-        //             zoom,
-        //             0,
-        //             0
-        //     );
-        //     aMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
-        // }
+        // 监听地图点击
+        aMap.setOnMapClickListener(new AMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                notifyMapClick(latLng);
+            }
+        });
+
+
+        // 监听地图移动
+        aMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
+
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+
+                // ⭐ 第一次进入 = 开始移动
+                if (!isCameraMoving) {
+                    isCameraMoving = true;
+                    notifyCameraMoveStart(cameraPosition);
+                }
+
+                // ⭐ 地图正在拖动 / 缩放 / 旋转
+                notifyCameraMoving(cameraPosition); // 持续（已节流）
+            }
+
+            @Override
+            public void onCameraChangeFinish(CameraPosition cameraPosition) {
+                isCameraMoving = false;
+
+                // 可选：如果你将来要“结束回调”
+                notifyCameraIdle(cameraPosition); // 完成（不节流）
+            }
+        });
+
+
 
         if (params != null) {
+
+            // 初始定位
             Object lat = params.get("latitude");
             Object lng = params.get("longitude");
             Object zoom = params.get("zoom");
-
             if (lat instanceof Number && lng instanceof Number) {
                 initLatitude = ((Number) lat).doubleValue();
                 initLongitude = ((Number) lng).doubleValue();
@@ -88,16 +132,25 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                         ? ((Number) zoom).floatValue()
                         : 14f;
             }
+
+            // 地图类型
+            Object type = params.get("mapType");
+            if (type instanceof Number) {
+                initMapType = ((Number) type).intValue();
+            }
+
         }
 
 
         // 4️⃣ 绑定 MethodChannel（重点）
         channel = new MethodChannel(
-                FlutterEngineHolder.getMessenger(),
+                HeyhipAmapPlugin.getMessenger(),
                 "heyhip_amap_map_" + id
         );
         channel.setMethodCallHandler(this);
 
+        // ⭐ 注册 MapView
+        HeyhipAmapPlugin.MAP_VIEWS.put(id, this);
     }
 
     @Override
@@ -107,23 +160,32 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     @Override
     public void dispose() {
-        // MAPS.remove(viewId);
         channel.setMethodCallHandler(null);
         mapView.onDestroy();
+
+        // ⭐ 从注册表移除
+        HeyhipAmapPlugin.MAP_VIEWS.remove(viewId);
     }
+
+    void onResume() {
+        mapView.onResume();
+    }
+
+    void onPause() {
+        mapView.onPause();
+    }
+
 
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         switch (call.method) {
 
             case "moveCamera":
-                handleMoveCamera(call, result);
+                moveCamera(call, result);
                 break;
-
             case "setZoom":
                 handleSetZoom(call, result);
                 break;
-
             case "getCameraPosition":
                 handleGetCameraPosition(result);
                 break;
@@ -133,35 +195,115 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         }
     }
 
-    // ======================
-    // 处理 moveCamera
-    // ======================
-    private void handleMoveCamera(MethodCall call, MethodChannel.Result result) {
+    // ui设置
+    @SuppressWarnings("unchecked")
+    private void applyUiSettings(Map<String, Object> params) {
+        if (params == null) return;
 
-        Double latitude = call.argument("latitude");
-        Double longitude = call.argument("longitude");
-        Double zoom = call.argument("zoom");
+        Object uiObj = params.get("uiSettings");
+        if (!(uiObj instanceof Map)) return;
 
-        if (latitude == null || longitude == null) {
-            result.error("INVALID_ARGS", "latitude or longitude is null", null);
+        Map<String, Object> ui = (Map<String, Object>) uiObj;
+        UiSettings uiSettings = aMap.getUiSettings();
+
+        Boolean zoomControls = (Boolean) ui.get("zoomControlsEnabled");
+        if (zoomControls != null) {
+            uiSettings.setZoomControlsEnabled(zoomControls);
+        }
+
+        Boolean compass = (Boolean) ui.get("compassEnabled");
+        if (compass != null) {
+            uiSettings.setCompassEnabled(compass);
+        }
+
+        Boolean scale = (Boolean) ui.get("scaleControlsEnabled");
+        if (scale != null) {
+            uiSettings.setScaleControlsEnabled(scale);
+        }
+
+        Boolean myLocation = (Boolean) ui.get("myLocationButtonEnabled");
+        if (myLocation != null) {
+            uiSettings.setMyLocationButtonEnabled(myLocation);
+        }
+
+        Boolean rotate = (Boolean) ui.get("rotateGesturesEnabled");
+        if (rotate != null) {
+            uiSettings.setRotateGesturesEnabled(rotate);
+        }
+
+        Boolean tilt = (Boolean) ui.get("tiltGesturesEnabled");
+        if (tilt != null) {
+            uiSettings.setTiltGesturesEnabled(tilt);
+        }
+
+        Boolean zoomGesture = (Boolean) ui.get("zoomGesturesEnabled");
+        if (zoomGesture != null) {
+            uiSettings.setZoomGesturesEnabled(zoomGesture);
+        }
+    }
+
+    // 地图类型
+    private void applyMapType(int type) {
+        switch (type) {
+            case 1:
+                aMap.setMapType(AMap.MAP_TYPE_SATELLITE);
+                break;
+
+            case 2:
+                aMap.setMapType(AMap.MAP_TYPE_NIGHT);
+                break;
+
+            case 3:
+                aMap.setMapType(AMap.MAP_TYPE_NAVI);
+                break;
+
+            case 4:
+                aMap.setMapType(AMap.MAP_TYPE_BUS);
+                break;
+
+            case 0:
+            default:
+                aMap.setMapType(AMap.MAP_TYPE_NORMAL);
+                break;
+        }
+    }
+
+
+
+    // 移动地图
+    private void moveCamera(MethodCall call, MethodChannel.Result result) {
+
+        Map<String, Object> target = call.argument("target");
+        if (target == null) {
+            result.error("INVALID_PARAM", "target is null", null);
             return;
         }
 
-        float zoomLevel = zoom != null ? zoom.floatValue() : aMap.getCameraPosition().zoom;
+        Double lat = (Double) target.get("latitude");
+        Double lng = (Double) target.get("longitude");
+        Double zoom = call.argument("zoom");
+        Double tilt = call.argument("tilt");
+        Double bearing = call.argument("bearing");
+
+        if (lat == null || lng == null) {
+            result.error("INVALID_PARAM", "lat or lng is null", null);
+            return;
+        }
+
+        CameraPosition current = aMap.getCameraPosition();
 
         CameraPosition position = new CameraPosition(
-                new LatLng(latitude, longitude),
-                zoomLevel,
-                0,
-                0
+                new LatLng(lat, lng),
+                zoom != null ? zoom.floatValue() : current.zoom,
+                tilt != null ? tilt.floatValue() : current.tilt,
+                bearing != null ? bearing.floatValue() : current.bearing
         );
 
-        aMap.animateCamera(
-                CameraUpdateFactory.newCameraPosition(position)
-        );
 
+        aMap.animateCamera(CameraUpdateFactory.newCameraPosition(position));
         result.success(null);
     }
+
 
     // ======================
     // 工具方法
@@ -210,11 +352,72 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         result.success(map);
     }
 
-
+    // 发送地图加载完成消息
     private void notifyMapLoaded() {
+        if (channel == null) return;
+
         channel.invokeMethod("onMapLoaded", null);
     }
 
+    // 发送地图点击消息
+    private void notifyMapClick(LatLng latLng) {
+        if (channel == null) return;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("latitude", latLng.latitude);
+        map.put("longitude", latLng.longitude);
+
+        channel.invokeMethod("onMapClick", map);
+    }
+
+    // 开始移动
+    private void notifyCameraMoveStart(CameraPosition position) {
+        if (channel == null) return;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("latitude", position.target.latitude);
+        map.put("longitude", position.target.longitude);
+        map.put("zoom", position.zoom);
+        map.put("tilt", position.tilt);
+        map.put("bearing", position.bearing);
+
+        channel.invokeMethod("onCameraMoveStart", map);
+    }
+
+    // 发送持续移动位置
+    private void notifyCameraMoving(CameraPosition position) {
+        if (channel == null) return;
+
+        long now = System.currentTimeMillis();
+        if (now - lastCameraMoveTime < CAMERA_MOVE_THROTTLE_MS) {
+            return;
+        }
+
+        lastCameraMoveTime = now;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("latitude", position.target.latitude);
+        map.put("longitude", position.target.longitude);
+        map.put("zoom", position.zoom);
+        map.put("tilt", position.tilt);
+        map.put("bearing", position.bearing);
+
+        channel.invokeMethod("onCameraMove", map);
+    }
+
+    // 发送移动完成中心点消息
+    private void notifyCameraIdle(CameraPosition position) {
+        if (channel == null) return;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("latitude", position.target.latitude);
+        map.put("longitude", position.target.longitude);
+        map.put("zoom", position.zoom);
+        map.put("tilt", position.tilt);
+        map.put("bearing", position.bearing);
+
+        channel.invokeMethod("onCameraIdle", map);
+    }
 
 
 
