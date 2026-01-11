@@ -133,6 +133,20 @@ class _MyAppState extends State<MyApp> {
             // mapController.onCameraMoveStart((position) {
             //   print('开始移动${position.target.latitude}, ${position.target.longitude}');
             // });
+            mapController.setMarkers([
+            {
+                'markerId': 'marker_1',
+                'latitude': 39.9087,
+                'longitude': 116.3975,
+              },
+              {
+                'markerId': 'marker_2',
+                'latitude': 31.2304,
+                'longitude': 121.4737,
+              },
+            ]);
+
+
 
         },
         
