@@ -6,6 +6,10 @@ typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
 typedef CameraMoveCallback = void Function(CameraPosition position);
 typedef CameraIdleCallback = void Function(CameraPosition position);
+typedef MarkerClickCallback = void Function(
+  String markerId,
+  LatLng position,
+);
 
 
 
@@ -34,6 +38,9 @@ class HeyhipAmapController {
   CameraIdleCallback? _onCameraIdle;
   // 地图持续移动
   CameraMoveCallback? _onCameraMove;
+  // Marker点击
+  MarkerClickCallback? _onMarkerClick;
+
 
 
   // 初始化相机
@@ -54,19 +61,23 @@ class HeyhipAmapController {
 
     _channel = MethodChannel('heyhip_amap_map_$viewId');
 
-    // 设置初始化回调
-    _channel!.setMethodCallHandler((call) async {
-      if (call.method == 'onMapLoaded') {
-        // _onMapLoaded?.call();
-        markMapReady();
-      }
-    });
-
     // 接收事件
     _channel!.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onMapLoaded':
           markMapReady();
+          break;
+
+        case 'onMarkerClick':
+          final map = Map<String, dynamic>.from(call.arguments);
+          final markerId = map['markerId'] as String;
+          final lat = map['latitude'] as double;
+          final lng = map['longitude'] as double;
+
+          _onMarkerClick?.call(
+            markerId,
+            LatLng(lat, lng),
+          );
           break;
 
         case 'onMapClick':
@@ -155,6 +166,12 @@ class HeyhipAmapController {
     _onCameraIdle = callback;
   }
 
+  // Marker点击
+  void onMarkerClick(MarkerClickCallback callback) {
+    _onMarkerClick = callback;
+  }
+
+
 
   // 移动地图
   Future<void> moveCamera(CameraPosition position) async {
@@ -195,6 +212,17 @@ class HeyhipAmapController {
 
     final result = await _channel!.invokeMethod<Map>('getCameraPosition');
     return Map<String, dynamic>.from(result ?? {});
+  }
+
+  // 设置Markers
+  Future<void> setMarkers(List<Map<String, dynamic>> markers) async {
+    if (!_attached || _channel == null) {
+      throw StateError('AMapController is not attached to a map');
+    }
+
+    await _channel!.invokeMethod('setMarkers', {
+      'markers': markers,
+    });
   }
 
 

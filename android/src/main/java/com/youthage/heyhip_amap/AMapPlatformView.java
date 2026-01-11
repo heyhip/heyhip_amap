@@ -13,6 +13,7 @@ import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.flutter.plugin.common.MethodCall;
@@ -24,7 +25,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private final int viewId;
     private final MapView mapView;
     private final AMap aMap;
-    private final MethodChannel channel;
+    private MethodChannel channel;
 
     // 初始定位
     private Double initLatitude;
@@ -40,6 +41,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     // 自定义，用于有开始移动功能
     private boolean isCameraMoving = false;
+
+    // 保存所有 marker
+    private final Map<String, com.amap.api.maps.model.Marker> markers = new HashMap<>();
 
 
     public AMapPlatformView(Context context, int id, Map<String, Object> params) {
@@ -91,7 +95,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             }
         });
 
-
         // 监听地图移动
         aMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
 
@@ -115,6 +118,29 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 // 可选：如果你将来要“结束回调”
                 notifyCameraIdle(cameraPosition); // 完成（不节流）
             }
+        });
+
+        // 监听marker点击
+        aMap.setOnMarkerClickListener(marker -> {
+
+            if (channel == null) return true;
+
+            Object tag = marker.getObject();
+            if (!(tag instanceof String)) {
+                return true;
+            }
+
+            String markerId = (String) tag;
+            LatLng position = marker.getPosition();
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("markerId", markerId);
+            map.put("latitude", position.latitude);
+            map.put("longitude", position.longitude);
+
+            channel.invokeMethod("onMarkerClick", map);
+
+            return true; // ⭐ 不穿透到地图
         });
 
 
@@ -179,7 +205,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         switch (call.method) {
-
+            case "setMarkers":
+                handleSetMarkers(call, result);
+                break;
             case "moveCamera":
                 moveCamera(call, result);
                 break;
@@ -303,6 +331,58 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         aMap.animateCamera(CameraUpdateFactory.newCameraPosition(position));
         result.success(null);
     }
+
+    // 设置Marker
+    @SuppressWarnings("unchecked")
+    private void handleSetMarkers(MethodCall call, MethodChannel.Result result) {
+
+        if (aMap == null) {
+            result.error("NO_MAP", "AMap not ready", null);
+            return;
+        }
+
+        Object listObj = call.argument("markers");
+        if (!(listObj instanceof java.util.List)) {
+            result.error("INVALID_PARAM", "markers is not a list", null);
+            return;
+        }
+
+        List<Map<String, Object>> list = (List<Map<String, Object>>) listObj;
+
+        // 🔥 先清空旧 marker（后续可以优化为 diff）
+        for (com.amap.api.maps.model.Marker marker : markers.values()) {
+            marker.remove();
+        }
+        markers.clear();
+
+        for (Map<String, Object> item : list) {
+
+            String id = (String) item.get("id");
+            Object latObj = item.get("latitude");
+            Object lngObj = item.get("longitude");
+
+            if (id == null || !(latObj instanceof Number) || !(lngObj instanceof Number)) {
+                continue;
+            }
+
+            LatLng latLng = new LatLng(
+                    ((Number) latObj).doubleValue(),
+                    ((Number) lngObj).doubleValue()
+            );
+
+            com.amap.api.maps.model.Marker marker = aMap.addMarker(
+                    new com.amap.api.maps.model.MarkerOptions()
+                            .position(latLng)
+            );
+
+            // ⭐ 保存 markerId
+            marker.setObject(id);
+            markers.put(id, marker);
+        }
+
+        result.success(null);
+    }
+
 
 
     // ======================
