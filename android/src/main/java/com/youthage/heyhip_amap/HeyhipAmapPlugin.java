@@ -60,6 +60,7 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
     return messenger;
   }
 
+
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
 
@@ -118,6 +119,11 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
     activity = binding.getActivity();
 
     activityBinding = binding;
+
+    // ⭐⭐ 关键：首次 attach 就 resume 所有 MapView
+    for (int i = 0; i < MAP_VIEWS.size(); i++) {
+      MAP_VIEWS.valueAt(i).onResume();
+    }
 
     binding.addRequestPermissionsResultListener(this);
   }

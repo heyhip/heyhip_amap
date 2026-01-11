@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
 import 'package:heyhip_amap/camera_position.dart';
+import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/map_type.dart';
@@ -96,6 +97,55 @@ class _MyAppState extends State<MyApp> {
   
 
   HeyhipAmapController mapController = HeyhipAmapController();
+
+  final markers = [
+  {
+    'id': 'marker_1',
+    'latitude': 30.482251,
+    'longitude': 104.080003,
+  },
+  {
+    'id': 'marker_2',
+    'latitude': 30.482351,
+    'longitude': 104.080103,
+  },
+  {
+    'id': 'marker_3',
+    'latitude': 30.482451,
+    'longitude': 104.080203,
+  },
+  {
+    'id': 'marker_4',
+    'latitude': 30.482551,
+    'longitude': 104.080303,
+  },
+  {
+    'id': 'marker_5',
+    'latitude': 30.482651,
+    'longitude': 104.080403,
+  },
+  {
+    'id': 'marker_6',
+    'latitude': 30.483200,
+    'longitude': 104.081000,
+  },
+  {
+    'id': 'marker_7',
+    'latitude': 30.483300,
+    'longitude': 104.081100,
+  },
+  {
+    'id': 'marker_8',
+    'latitude': 30.490000,
+    'longitude': 104.090000,
+  },
+  {
+    'id': 'marker_9',
+    'latitude': 30.490100,
+    'longitude': 104.090100,
+  },
+];
+
   
 
   @override
@@ -110,11 +160,20 @@ class _MyAppState extends State<MyApp> {
     SizedBox(
       height: 500,
       child: HeyhipAmapView(
-        // mapType: MapType.satellite,
+        mapType: MapType.normal,
+        clusterEnabled: true,
+        // clusterStyle: ClusterStyle(
+        //   bgColor: Color(0xFFE91E63),
+        //   textColor: Colors.blue,
+        //   showStroke: true,
+        //   strokeColor: Colors.black
+        // ),
         controller: mapController,
         onMapCreated: () {
           mapController.onMapLoadFinish(() {
             print("地图完成");
+
+           
           });
 
           mapController.onMapClick((latLng) {
@@ -122,31 +181,7 @@ class _MyAppState extends State<MyApp> {
               mapController.moveCamera(CameraPosition(target: latLng));
             });
 
-            // mapController.onCameraIdle((position) {
-            //   print('中心点：${position.target.latitude}, ${position.target.longitude}');
-            // });
-
-             mapController.onCameraMove((position) {
-              print('持续移动：${position.target.latitude}, ${position.target.longitude}');
-            });
-
-            // mapController.onCameraMoveStart((position) {
-            //   print('开始移动${position.target.latitude}, ${position.target.longitude}');
-            // });
-            mapController.setMarkers([
-            {
-                'markerId': 'marker_1',
-                'latitude': 39.9087,
-                'longitude': 116.3975,
-              },
-              {
-                'markerId': 'marker_2',
-                'latitude': 31.2304,
-                'longitude': 121.4737,
-              },
-            ]);
-
-
+             mapController.setMarkers(markers);
 
         },
         

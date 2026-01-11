@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
+import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/map_type.dart';
 
@@ -9,6 +10,8 @@ class HeyhipAmapView extends StatelessWidget {
   final double? longitude;
   final double? zoom;
   final MapType mapType;
+  final bool clusterEnabled;
+  final ClusterStyle? clusterStyle;
 
 
    /// ✅ 外部传入的 Controller
@@ -29,6 +32,8 @@ class HeyhipAmapView extends StatelessWidget {
     this.onMapCreated,
     this.uiSettings = const AMapUiSettings(),
     this.mapType = MapType.normal,
+    this.clusterEnabled = true,
+    this.clusterStyle,
   });
 
   @override
@@ -41,6 +46,8 @@ class HeyhipAmapView extends StatelessWidget {
         'zoom': zoom,
         'uiSettings': uiSettings.toMap(),
         'mapType': mapType.value,
+        'clusterEnabled': clusterEnabled,
+        'clusterStyle': clusterStyle?.toMap(),
       },
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,

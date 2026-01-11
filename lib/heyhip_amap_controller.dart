@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/camera_position.dart';
+import 'package:heyhip_amap/cluster_style.dart';
 
 typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
@@ -220,11 +221,30 @@ class HeyhipAmapController {
       throw StateError('AMapController is not attached to a map');
     }
 
-    await _channel!.invokeMethod('setMarkers', {
-      'markers': markers,
-    });
+    Future<void> action() {
+      return _channel!.invokeMethod('setMarkers', {
+        'markers': markers,
+      });
+    }
+
+    if (_mapReady) {
+      await action();
+    } else {
+      _pendingActions.add(action);
+    }
   }
 
+  // Future<void> setClusterOptions({
+  //   required bool enable,
+  //   ClusterStyle? style,
+  // }) async {
+  //   if (_channel == null) return;
+
+  //   await _channel!.invokeMethod('setClusterOptions', {
+  //     'enable': enable,
+  //     'style': style?.toMap(),
+  //   });
+  // }
 
 
 
