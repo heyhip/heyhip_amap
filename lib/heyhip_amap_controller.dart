@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/cluster_style.dart';
+import 'package:heyhip_amap/heyhip_marker.dart';
 
 typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
@@ -216,15 +217,36 @@ class HeyhipAmapController {
   }
 
   // 设置Markers
-  Future<void> setMarkers(List<Map<String, dynamic>> markers) async {
+  // Future<void> setMarkers(List<Map<String, dynamic>> markers) async {
+  //   if (!_attached || _channel == null) {
+  //     throw StateError('AMapController is not attached to a map');
+  //   }
+
+  //   Future<void> action() {
+  //     return _channel!.invokeMethod('setMarkers', {
+  //       'markers': markers,
+  //     });
+  //   }
+
+  //   if (_mapReady) {
+  //     await action();
+  //   } else {
+  //     _pendingActions.add(action);
+  //   }
+  // }
+
+  Future<void> setMarkers(List<HeyhipMarker> markers) async {
     if (!_attached || _channel == null) {
       throw StateError('AMapController is not attached to a map');
     }
 
     Future<void> action() {
-      return _channel!.invokeMethod('setMarkers', {
-        'markers': markers,
-      });
+      return _channel!.invokeMethod(
+        'setMarkers',
+        {
+          'markers': markers.map((e) => e.toMap()).toList(),
+        },
+      );
     }
 
     if (_mapReady) {
@@ -234,6 +256,8 @@ class HeyhipAmapController {
     }
   }
 
+
+  
   // Future<void> setClusterOptions({
   //   required bool enable,
   //   ClusterStyle? style,

@@ -31,6 +31,7 @@ import com.amap.api.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,11 +43,14 @@ import java.util.Set;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
+import io.flutter.embedding.engine.loader.FlutterLoader;
 
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.youthage.heyhip_amap.model.HeyhipMarkerIconModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerModel;
 
 import android.animation.ValueAnimator;
 import android.view.animation.DecelerateInterpolator;
@@ -88,7 +92,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private final Map<String, Marker> clusterMarkers = new HashMap<>();
 
     // 最近一次 Flutter 传下来的 markers（用于自动聚合）
-    private List<Map<String, Object>> lastMarkers;
+    private List<HeyhipMarkerModel> lastMarkers;
 
     // 最后可视区域
     private LatLngBounds lastVisibleBounds;
@@ -101,6 +105,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     // 地图是否加载完成
     private boolean mapReady = false;
 
+    private static FlutterLoader flutterLoader;
 
     // Marker icon 内存缓存（url + size → Bitmap）
     private static final LruCache<String, Bitmap> iconCache;
@@ -271,6 +276,12 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         }
 
 
+        if (flutterLoader == null) {
+            flutterLoader = new FlutterLoader();
+            flutterLoader.startInitialization(context);
+            flutterLoader.ensureInitializationComplete(context, null);
+        }
+
         // 4️⃣ 绑定 MethodChannel（重点）
         channel = new MethodChannel(
                 HeyhipAmapPlugin.getMessenger(),
@@ -416,44 +427,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         }
     }
 
-    // icon
-    private BitmapDescriptor buildMarkerIcon(Map<String, Object> item) {
-        Object iconObj = item.get("icon");
-        if (!(iconObj instanceof Map)) {
-            return BitmapDescriptorFactory.defaultMarker();
-        }
-
-        Map<String, Object> icon = (Map<String, Object>) iconObj;
-        String type = (String) icon.get("type");
-        Object value = icon.get("value");
-
-        int width = getInt(item.get("iconWidth"), 48);
-        int height = getInt(item.get("iconHeight"), 48);
-
-        try {
-            switch (type) {
-                case "asset":
-                    return loadFromAsset((String) value, width, height);
-
-                case "bitmap":
-                    return loadFromBitmap(value, width, height);
-
-                case "base64":
-                    return loadFromBase64((String) value, width, height);
-
-                case "network":
-                    // ⭐ 网络图：这里只返回占位 icon
-                    return BitmapDescriptorFactory.defaultMarker();
-
-                default:
-                    return BitmapDescriptorFactory.defaultMarker();
-            }
-        } catch (Exception e) {
-            return BitmapDescriptorFactory.defaultMarker();
-        }
-    }
-
-
     // icon聚合
     private BitmapDescriptor buildClusterIcon(int count) {
 
@@ -575,18 +548,22 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     }
 
 
-
-
-
     private BitmapDescriptor loadFromAsset(
             String assetPath,
             int width,
             int height
     ) throws IOException {
 
+
+        String flutterAssetPath = flutterLoader.getLookupKeyForAsset(assetPath);
+
         AssetManager am = mapView.getContext().getAssets();
-        InputStream is = am.open(assetPath);
+        InputStream is = am.open(flutterAssetPath);
+
         Bitmap bitmap = BitmapFactory.decodeStream(is);
+        if (bitmap == null) {
+            throw new IOException("Failed to decode asset: " + flutterAssetPath);
+        }
 
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
         return BitmapDescriptorFactory.fromBitmap(scaled);
@@ -597,15 +574,23 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             int width,
             int height
     ) {
-        if (!(value instanceof byte[])) {
+        byte[] bytes;
+
+        if (value instanceof byte[]) {
+            bytes = (byte[]) value;
+        } else if (value instanceof ByteBuffer) {
+            ByteBuffer buffer = (ByteBuffer) value;
+            bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+        } else {
             return BitmapDescriptorFactory.defaultMarker();
         }
 
-        byte[] bytes = (byte[]) value;
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
         return BitmapDescriptorFactory.fromBitmap(scaled);
     }
+
 
     private BitmapDescriptor loadFromBase64(
             String base64,
@@ -635,6 +620,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             return;
         }
 
+        final Object markerTag = marker.getObject();
+
         // 2️⃣ Glide 异步加载
         Glide.with(mapView.getContext())
                 .asBitmap()
@@ -649,6 +636,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                             @Nullable Transition<? super Bitmap> transition
                     ) {
                         if (bitmap.isRecycled()) return;
+
+                        if (marker.getObject() != markerTag) return;
 
                         iconCache.put(cacheKey, bitmap);
 
@@ -705,7 +694,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     }
 
     // 设置Marker
+    @SuppressWarnings("unchecked")
     private void handleSetMarkers(MethodCall call, MethodChannel.Result result) {
+
         if (!mapReady) {
             result.error("MAP_NOT_READY", "Map is not loaded yet", null);
             return;
@@ -717,35 +708,40 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             return;
         }
 
-        List<Map<String, Object>> list = (List<Map<String, Object>>) listObj;
+        List<Map<String, Object>> rawList =
+                (List<Map<String, Object>>) listObj;
 
-        // ⭐ Step 4-6.1：缓存 markers
-        lastMarkers = list;
+        List<HeyhipMarkerModel> markers = new ArrayList<>();
 
-        // ⭐ Step 4-6.2：真正刷新聚合
-        refreshClusters(list);
+        for (Map<String, Object> map : rawList) {
+            HeyhipMarkerModel marker =
+                    HeyhipMarkerModel.fromMap(map);
+            if (marker != null) {
+                markers.add(marker);
+            }
+        }
+
+        // ⭐ 后面全部只用 model
+        refreshClusters(markers);
 
         result.success(null);
     }
 
-
     // 刷新聚合
-    private void refreshClusters(List<Map<String, Object>> list) {
+    private void refreshClusters(List<HeyhipMarkerModel> list) {
         if (!mapReady || list == null || aMap == null) return;
 
         float zoom = aMap.getCameraPosition().zoom;
         int zoomLevel = Math.round(zoom);
-        // int gridSize = getClusterGridSize(zoom);
-        int gridSize = clusterEnabled ? getClusterGridSize(zoom) : 0; // 0 = 不聚合
-
+        int gridSize = clusterEnabled ? getClusterGridSize(zoom) : 0;
 
         boolean sameZoom = zoomLevel == lastZoomLevel;
         boolean sameGrid = gridSize == lastGridSize;
         LatLngBounds currentBounds = getVisibleBounds();
 
-        // boolean sameBounds = isSameBounds(lastVisibleBounds, currentBounds);
-
-        if (sameZoom && sameGrid && isSameBounds(lastVisibleBounds, currentBounds) && lastMarkers == list) {
+        if (sameZoom
+                && sameGrid
+                && isSameBounds(lastVisibleBounds, currentBounds)) {
             return;
         }
 
@@ -754,31 +750,13 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         // =====================================================
         List<ClusterItem> visibleItems = new ArrayList<>();
 
-        for (Map<String, Object> item : list) {
-            Object idObj = item.get("id");
-            Object latObj = item.get("latitude");
-            Object lngObj = item.get("longitude");
-
-            if (!(idObj instanceof String)
-                    || !(latObj instanceof Number)
-                    || !(lngObj instanceof Number)) {
-                continue;
-            }
-
-            LatLng latLng = new LatLng(
-                    ((Number) latObj).doubleValue(),
-                    ((Number) lngObj).doubleValue()
-            );
-
-            if (!isInVisibleBounds(latLng)) continue;
-
-            visibleItems.add(
-                    new ClusterItem((String) idObj, latLng)
-            );
+        for (HeyhipMarkerModel marker : list) {
+            if (!isInVisibleBounds(marker.latLng)) continue;
+            visibleItems.add(new ClusterItem(marker.id, marker.latLng));
         }
 
         // =====================================================
-        // Step 4-5-3：生成 clusters
+        // 生成 clusters
         // =====================================================
         List<Cluster> clusters;
 
@@ -795,12 +773,12 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         }
 
         // =====================================================
-        // Step 4-5-4：本轮 marker key
+        // 本轮 marker key
         // =====================================================
         Set<String> newMarkerKeys = new HashSet<>();
 
         // =====================================================
-        // Step 4-5-5：渲染 clusters
+        // 渲染 clusters
         // =====================================================
         for (Cluster cluster : clusters) {
 
@@ -812,36 +790,33 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 newMarkerKeys.add(markerKey);
 
                 Marker marker = itemMarkers.get(markerKey);
+                HeyhipMarkerModel model = findMarkerModel(list, markerKey);
 
                 if (marker == null) {
                     marker = aMap.addMarker(
                             new MarkerOptions()
                                     .position(item.latLng)
-                                    .icon(findItemIcon(list, item.id))
+                                    .icon(buildItemIcon(model))
                     );
                     marker.setObject(markerKey);
                     itemMarkers.put(markerKey, marker);
 
-                    // ⭐ 新增：出现动画
                     animateMarkerAppear(marker);
                 } else {
                     marker.setPosition(item.latLng);
                 }
 
                 // network icon
-                Map<String, Object> src = findItem(list, item.id);
-                if (src != null) {
-                    Object iconObj = src.get("icon");
-                    if (iconObj instanceof Map) {
-                        
-                        Map<String, Object> icon = (Map<String, Object>) iconObj;
-                        if ("network".equals(icon.get("type"))) {
-                            String url = (String) icon.get("value");
-                            int w = getInt(src.get("iconWidth"), 48);
-                            int h = getInt(src.get("iconHeight"), 48);
-                            loadFromNetwork(url, w, h, marker);
-                        }
-                    }
+                if (model != null
+                        && model.icon != null
+                        && "network".equals(model.icon.type)) {
+
+                    loadFromNetwork(
+                            (String) model.icon.value,
+                            model.icon.width,
+                            model.icon.height,
+                            marker
+                    );
                 }
 
             }
@@ -849,7 +824,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             else {
 
                 Point p = latLngToWorldPoint(cluster.center, zoomLevel);
-
                 String markerKey = buildClusterId(p, gridSize, zoomLevel);
                 newMarkerKeys.add(markerKey);
 
@@ -884,13 +858,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     }
                 }
             }
-
-
         }
 
-
         // =====================================================
-        // Step 4-5-6：diff 删除旧 marker
+        // diff 删除旧 marker（动画）
         // =====================================================
         Iterator<Map.Entry<String, Marker>> it1 = itemMarkers.entrySet().iterator();
         while (it1.hasNext()) {
@@ -898,10 +869,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             if (!newMarkerKeys.contains(entry.getKey())) {
                 Marker m = entry.getValue();
                 it1.remove();
-
-                // ⭐ 改为动画删除
                 animateMarkerDisappear(m, null);
-
             }
         }
 
@@ -911,46 +879,74 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             if (!newMarkerKeys.contains(entry.getKey())) {
                 Marker m = entry.getValue();
                 it2.remove();
-
-                // ⭐ 改为动画删除
                 animateMarkerDisappear(m, null);
-
             }
         }
 
-        // ===== Step 4-8.4：更新缓存 =====
+        // =====================================================
+        // 更新缓存
+        // =====================================================
         lastZoomLevel = zoomLevel;
         lastGridSize = gridSize;
         lastVisibleBounds = currentBounds;
-
+        lastMarkers = list;
     }
 
 
-
-
-
     @Nullable
-    private Map<String, Object> findItem(
-            List<Map<String, Object>> list,
+    private HeyhipMarkerModel findMarkerModel(
+            List<HeyhipMarkerModel> list,
             String id
     ) {
-        for (Map<String, Object> item : list) {
-            if (id.equals(item.get("id"))) {
-                return item;
-            }
+        for (HeyhipMarkerModel m : list) {
+            if (m.id.equals(id)) return m;
         }
         return null;
     }
 
-    private BitmapDescriptor findItemIcon(
-            List<Map<String, Object>> list,
-            String id
-    ) {
-        Map<String, Object> item = findItem(list, id);
-        return item != null
-                ? buildMarkerIcon(item)
-                : BitmapDescriptorFactory.defaultMarker();
+    private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerModel model) {
+
+        HeyhipMarkerIconModel icon = model.icon;
+        if (icon == null) {
+            return BitmapDescriptorFactory.defaultMarker();
+        }
+
+        try {
+            switch (icon.type) {
+
+                case "asset":
+                    return loadFromAsset(
+                            (String) icon.value,
+                            icon.width,
+                            icon.height
+                    );
+
+                case "base64":
+                    return loadFromBase64(
+                            (String) icon.value,
+                            icon.width,
+                            icon.height
+                    );
+
+                case "bitmap":
+                    return loadFromBitmap(
+                            icon.value,
+                            icon.width,
+                            icon.height
+                    );
+
+                case "network":
+                    // 先占位，真正图片异步加载
+                    return BitmapDescriptorFactory.defaultMarker();
+
+                default:
+                    return BitmapDescriptorFactory.defaultMarker();
+            }
+        } catch (Exception e) {
+            return BitmapDescriptorFactory.defaultMarker();
+        }
     }
+
 
     // 转世界坐标
     private Point latLngToWorldPoint(LatLng latLng, int zoomLevel) {
@@ -1000,12 +996,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         return bounds.contains(latLng);
     }
 
-    // 经纬度 → 屏幕像素
-    // private Point latLngToPoint(LatLng latLng) {
-    //     return aMap.getProjection().toScreenLocation(latLng);
-    // }
-
-
     // 聚合
     private int getClusterGridSize(float zoom) {
         if (zoom < 5)  return 200;
@@ -1026,11 +1016,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         return "cluster_" + zoomLevel + "_" + gx + "_" + gy;
     }
 
-
-    // 获取当前层级
-    private int getZoomLevel() {
-        return Math.round(aMap.getCameraPosition().zoom);
-    }
 
     // 聚合算法
     private List<Cluster> buildClusters(

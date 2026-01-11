@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
 import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
+import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/map_type.dart';
 
 class HeyhipAmapView extends StatelessWidget {
@@ -23,6 +24,8 @@ class HeyhipAmapView extends StatelessWidget {
   /// ⭐ UI 设置
   final AMapUiSettings uiSettings;
 
+  final List<HeyhipMarker>? markers;  
+
   const HeyhipAmapView({
     super.key,
     this.latitude,
@@ -34,6 +37,7 @@ class HeyhipAmapView extends StatelessWidget {
     this.mapType = MapType.normal,
     this.clusterEnabled = true,
     this.clusterStyle,
+    this.markers,
   });
 
   @override

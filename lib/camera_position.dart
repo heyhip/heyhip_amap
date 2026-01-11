@@ -19,15 +19,15 @@ class LatLng {
 
 class CameraPosition {
   final LatLng target;
-  final double zoom;
-  final double tilt;
-  final double bearing;
+  final double? zoom;
+  final double? tilt;
+  final double? bearing;
 
   const CameraPosition({
     required this.target,
-    this.zoom = 14,
-    this.tilt = 0,
-    this.bearing = 0,
+    this.zoom,
+    this.tilt,
+    this.bearing,
   });
 
   Map<String, dynamic> toMap() => {

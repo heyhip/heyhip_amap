@@ -7,7 +7,9 @@ import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
+import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/map_type.dart';
+import 'package:heyhip_amap/marker_icon.dart';
 
 void main() {
 
@@ -98,52 +100,112 @@ class _MyAppState extends State<MyApp> {
 
   HeyhipAmapController mapController = HeyhipAmapController();
 
-  final markers = [
-  {
-    'id': 'marker_1',
-    'latitude': 30.482251,
-    'longitude': 104.080003,
-  },
-  {
-    'id': 'marker_2',
-    'latitude': 30.482351,
-    'longitude': 104.080103,
-  },
-  {
-    'id': 'marker_3',
-    'latitude': 30.482451,
-    'longitude': 104.080203,
-  },
-  {
-    'id': 'marker_4',
-    'latitude': 30.482551,
-    'longitude': 104.080303,
-  },
-  {
-    'id': 'marker_5',
-    'latitude': 30.482651,
-    'longitude': 104.080403,
-  },
-  {
-    'id': 'marker_6',
-    'latitude': 30.483200,
-    'longitude': 104.081000,
-  },
-  {
-    'id': 'marker_7',
-    'latitude': 30.483300,
-    'longitude': 104.081100,
-  },
-  {
-    'id': 'marker_8',
-    'latitude': 30.490000,
-    'longitude': 104.090000,
-  },
-  {
-    'id': 'marker_9',
-    'latitude': 30.490100,
-    'longitude': 104.090100,
-  },
+//   final markers = [
+//   {
+//     'id': 'marker_1',
+//     'latitude': 30.482251,
+//     'longitude': 104.080003,
+//   },
+//   {
+//     'id': 'marker_2',
+//     'latitude': 30.482351,
+//     'longitude': 104.080103,
+//   },
+//   {
+//     'id': 'marker_3',
+//     'latitude': 30.482451,
+//     'longitude': 104.080203,
+//   },
+//   {
+//     'id': 'marker_4',
+//     'latitude': 30.482551,
+//     'longitude': 104.080303,
+//   },
+//   {
+//     'id': 'marker_5',
+//     'latitude': 30.482651,
+//     'longitude': 104.080403,
+//   },
+//   {
+//     'id': 'marker_6',
+//     'latitude': 30.483200,
+//     'longitude': 104.081000,
+//   },
+//   {
+//     'id': 'marker_7',
+//     'latitude': 30.483300,
+//     'longitude': 104.081100,
+//   },
+//   {
+//     'id': 'marker_8',
+//     'latitude': 30.490000,
+//     'longitude': 104.090000,
+//   },
+//   {
+//     'id': 'marker_9',
+//     'latitude': 30.490100,
+//     'longitude': 104.090100,
+//   },
+
+ 
+// ];
+
+
+final List<HeyhipMarker> markers = [
+  HeyhipMarker(
+    id: 'marker_1',
+    latitude: 30.482251,
+    longitude: 104.080003,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_2',
+    latitude: 30.482351,
+    longitude: 104.080103,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_3',
+    latitude: 30.482451,
+    longitude: 104.080203,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_4',
+    latitude: 30.482551,
+    longitude: 104.080303,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_5',
+    latitude: 30.482651,
+    longitude: 104.080403,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_6',
+    latitude: 30.4832,
+    longitude: 104.081,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_7',
+    latitude: 30.4833,
+    longitude: 104.0811,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_8',
+    latitude: 30.49,
+    longitude: 104.09,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  ),
+  HeyhipMarker(
+    id: 'marker_9',
+    latitude: 30.4901,
+    longitude: 104.0901,
+    icon: MarkerIcon.asset('assets/images/point.png')
+  )
 ];
 
   
