@@ -69,6 +69,14 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     @Nullable
     private Map<String, Object> clusterStyle;
 
+    // 是否开启marker弹窗
+    private boolean markerTapTogglePopup = false;
+    /// 当前“弹窗打开”的 marker id
+    @Nullable
+    private String activePopupMarkerId = null;
+
+
+
 
     // 初始定位
     private Double initLatitude;
@@ -220,6 +228,48 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 String markerId = (String) tag;
                 LatLng position = marker.getPosition();
 
+
+                // =========================
+                // ⭐ marker 点击 toggle 逻辑
+                // =========================
+                if (markerTapTogglePopup) {
+
+                    if (markerId.equals(activePopupMarkerId)) {
+
+                        // 再次点击同一个 marker → 关闭
+                        activePopupMarkerId = null;
+
+                        if (channel != null) {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("markerId", markerId);
+                            map.put("action", "close");
+                            channel.invokeMethod("onMarkerPopupToggle", map);
+                        }
+
+                    } else {
+
+                        // 点击新的 marker
+                        activePopupMarkerId = markerId;
+
+                        if (channel != null) {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("markerId", markerId);
+                            map.put("latitude", position.latitude);
+                            map.put("longitude", position.longitude);
+                            map.put("action", "open");
+                            channel.invokeMethod("onMarkerPopupToggle", map);
+                        }
+
+                    }
+
+                    return true;
+                }
+
+
+
+                // =========================
+                // ⭐ 原有：普通 marker 点击
+                // =========================
                 if (channel != null) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("markerId", markerId);
@@ -270,6 +320,14 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             Object cs = params.get("clusterStyle");
             if (cs instanceof Map) {
                 clusterStyle = (Map<String, Object>) cs;
+            }
+
+            // =========================
+            // 启用marker弹窗
+            // =========================
+            Object toggle = params.get("markerTapTogglePopup");
+            if (toggle instanceof Boolean) {
+                markerTapTogglePopup = (Boolean) toggle;
             }
 
 
@@ -657,6 +715,18 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {}
                 });
     }
+
+
+    // 打开弹窗
+    private void openMarkerPopup(String markerId, Marker marker) {
+        Log.d("HeyhipAmap", "open popup: " + markerId);
+    }
+
+    // 关闭弹窗
+    private void closeMarkerPopup(String markerId) {
+        Log.d("HeyhipAmap", "close popup: " + markerId);
+    }
+
 
 
     // 移动地图

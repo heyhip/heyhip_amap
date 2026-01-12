@@ -39,14 +39,14 @@
 
 
         <!-- 高德map 配置 -->
-        <!-- <meta-data
-            android:name="com.amap.api.v2.apikey"
-            android:value="8669320b0376e085d9f6eacc409e14dc" /> -->
-
-        <!-- 笔记本电脑 -->
         <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="d34d4dfce1761181098d1ae3bde58a33" />
+            android:value="8669320b0376e085d9f6eacc409e14dc" />
+
+        <!-- 笔记本电脑 -->
+        <!-- <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="d34d4dfce1761181098d1ae3bde58a33" /> -->
 
 
         

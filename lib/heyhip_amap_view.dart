@@ -13,6 +13,9 @@ class HeyhipAmapView extends StatelessWidget {
   final MapType mapType;
   final bool clusterEnabled;
   final ClusterStyle? clusterStyle;
+  /// 是否启用 marker 点击弹窗
+  final bool markerTapTogglePopup;
+
 
 
    /// ✅ 外部传入的 Controller
@@ -23,8 +26,6 @@ class HeyhipAmapView extends StatelessWidget {
 
   /// ⭐ UI 设置
   final AMapUiSettings uiSettings;
-
-  final List<HeyhipMarker>? markers;  
 
   const HeyhipAmapView({
     super.key,
@@ -37,7 +38,7 @@ class HeyhipAmapView extends StatelessWidget {
     this.mapType = MapType.normal,
     this.clusterEnabled = false,
     this.clusterStyle,
-    this.markers,
+    this.markerTapTogglePopup = false,
   });
 
   @override
@@ -52,6 +53,7 @@ class HeyhipAmapView extends StatelessWidget {
         'mapType': mapType.value,
         'clusterEnabled': clusterEnabled,
         'clusterStyle': clusterStyle?.toMap(),
+        'markerTapTogglePopup': markerTapTogglePopup,
       },
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,

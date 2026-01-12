@@ -12,6 +12,13 @@ typedef MarkerClickCallback = void Function(
   String markerId,
   LatLng position,
 );
+typedef MarkerPopupToggleCallback = void Function(
+  String markerId,
+  bool isOpen,
+  double? latitude,
+  double? longitude,
+);
+
 
 
 
@@ -42,7 +49,8 @@ class HeyhipAmapController {
   CameraMoveCallback? _onCameraMove;
   // Marker点击
   MarkerClickCallback? _onMarkerClick;
-
+  // Marker点击弹窗
+  MarkerPopupToggleCallback? _onMarkerPopupToggle;
 
 
   // 初始化相机
@@ -105,7 +113,9 @@ class HeyhipAmapController {
           _onCameraMoveStart?.call(CameraPosition.fromMap(map));
           break;
 
-        
+        case 'onMarkerPopupToggle':
+          _handleMarkerPopupToggle(call.arguments);
+          break;
 
         default:
           debugPrint('未知 native 方法: ${call.method}');
@@ -217,24 +227,6 @@ class HeyhipAmapController {
   }
 
   // 设置Markers
-  // Future<void> setMarkers(List<Map<String, dynamic>> markers) async {
-  //   if (!_attached || _channel == null) {
-  //     throw StateError('AMapController is not attached to a map');
-  //   }
-
-  //   Future<void> action() {
-  //     return _channel!.invokeMethod('setMarkers', {
-  //       'markers': markers,
-  //     });
-  //   }
-
-  //   if (_mapReady) {
-  //     await action();
-  //   } else {
-  //     _pendingActions.add(action);
-  //   }
-  // }
-
   Future<void> setMarkers(List<HeyhipMarker> markers) async {
     if (!_attached || _channel == null) {
       throw StateError('AMapController is not attached to a map');
@@ -256,6 +248,29 @@ class HeyhipAmapController {
     }
   }
 
+
+  // 弹窗
+  void _handleMarkerPopupToggle(dynamic args) {
+    if (_onMarkerPopupToggle == null || args is! Map) return;
+
+    final markerId = args['markerId'] as String?;
+    final action = args['action'] as String?;
+
+    if (markerId == null || action == null) return;
+
+    final isOpen = action == 'open';
+
+    final latitude = (args['latitude'] as num?)?.toDouble();
+    final longitude = (args['longitude'] as num?)?.toDouble();
+
+    _onMarkerPopupToggle!(
+      markerId,
+      isOpen,
+      latitude,
+      longitude,
+    );
+  }
+}
 
   
   // Future<void> setClusterOptions({
