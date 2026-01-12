@@ -9,15 +9,15 @@ class MarkerIcon {
   const MarkerIcon._(
     this.type,
     this.value, {
-    this.width = 60,
-    this.height = 60,
+    this.width = 120,
+    this.height = 120,
   });
 
   /// asset 图标
   factory MarkerIcon.asset(
     String assetPath, {
-    double width = 60,
-    double height = 60,
+    double width = 120,
+    double height = 120,
   }) {
     return MarkerIcon._(
       'asset',
@@ -30,8 +30,8 @@ class MarkerIcon {
   /// 网络图标
   factory MarkerIcon.network(
     String url, {
-    double width = 60,
-    double height = 60,
+    double width = 120,
+    double height = 120,
   }) {
     return MarkerIcon._(
       'network',
@@ -44,8 +44,8 @@ class MarkerIcon {
   /// base64 图标
   factory MarkerIcon.base64(
     String base64, {
-    double width = 60,
-    double height = 60,
+    double width = 120,
+    double height = 120,
   }) {
     return MarkerIcon._(
       'base64',
@@ -58,8 +58,8 @@ class MarkerIcon {
   /// ⚠️ bitmap（不建议 Flutter → 原生）
   factory MarkerIcon.bitmap(
     Uint8List bytes, {
-    double width = 60,
-    double height = 60,
+    double width = 120,
+    double height = 120,
   }) {
     return MarkerIcon._(
       'bitmap',

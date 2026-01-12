@@ -15,7 +15,11 @@ void main() {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "");
+  // HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "");
+  // 笔记本电脑
+  HeyhipAmap.initKey(androidKey: "d34d4dfce1761181098d1ae3bde58a33", iosKey: "");
+
+  
   HeyhipAmap.updatePrivacy(hasAgree: true, hasShow: true, hasContains: true);
 
   runApp(const MyApp());
@@ -209,7 +213,6 @@ final List<HeyhipMarker> markers = [
 ];
 
   
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -219,11 +222,16 @@ final List<HeyhipMarker> markers = [
         ),
         body: Column(
   children: [
+
+
     SizedBox(
       height: 500,
       child: HeyhipAmapView(
+         latitude: 30.482251,
+        longitude: 104.080003,
+        zoom: 14,
         mapType: MapType.normal,
-        clusterEnabled: true,
+        // clusterEnabled: true,
         // clusterStyle: ClusterStyle(
         //   bgColor: Color(0xFFE91E63),
         //   textColor: Colors.blue,

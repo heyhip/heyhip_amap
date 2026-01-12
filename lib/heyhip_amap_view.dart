@@ -35,7 +35,7 @@ class HeyhipAmapView extends StatelessWidget {
     this.onMapCreated,
     this.uiSettings = const AMapUiSettings(),
     this.mapType = MapType.normal,
-    this.clusterEnabled = true,
+    this.clusterEnabled = false,
     this.clusterStyle,
     this.markers,
   });
