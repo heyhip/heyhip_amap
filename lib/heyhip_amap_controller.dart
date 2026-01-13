@@ -114,7 +114,25 @@ class HeyhipAmapController {
           break;
 
         case 'onMarkerPopupToggle':
-          _handleMarkerPopupToggle(call.arguments);
+          if (call.arguments is Map) {
+            final map = Map<String, dynamic>.from(call.arguments);
+
+            final markerId = map['markerId'] as String?;
+            final action = map['action'] as String?;
+
+            if (markerId != null && action != null) {
+              final isOpen = action == 'open';
+              final latitude = (map['latitude'] as num?)?.toDouble();
+              final longitude = (map['longitude'] as num?)?.toDouble();
+
+              _onMarkerPopupToggle?.call(
+                markerId,
+                isOpen,
+                latitude,
+                longitude,
+              );
+            }
+          }
           break;
 
         default:
@@ -183,6 +201,10 @@ class HeyhipAmapController {
     _onMarkerClick = callback;
   }
 
+  // Marker点击出现弹窗
+  void onMarkerPopupToggle(MarkerPopupToggleCallback callback) {
+    _onMarkerPopupToggle = callback;
+  }
 
 
   // 移动地图
@@ -249,28 +271,27 @@ class HeyhipAmapController {
   }
 
 
-  // 弹窗
-  void _handleMarkerPopupToggle(dynamic args) {
-    if (_onMarkerPopupToggle == null || args is! Map) return;
+  // // 弹窗
+  // void _handleMarkerPopupToggle(dynamic args) {
+  //   if (_onMarkerPopupToggle == null || args is! Map) return;
 
-    final markerId = args['markerId'] as String?;
-    final action = args['action'] as String?;
+  //   final markerId = args['markerId'] as String?;
+  //   final action = args['action'] as String?;
 
-    if (markerId == null || action == null) return;
+  //   if (markerId == null || action == null) return;
 
-    final isOpen = action == 'open';
+  //   final isOpen = action == 'open';
 
-    final latitude = (args['latitude'] as num?)?.toDouble();
-    final longitude = (args['longitude'] as num?)?.toDouble();
+  //   final latitude = (args['latitude'] as num?)?.toDouble();
+  //   final longitude = (args['longitude'] as num?)?.toDouble();
 
-    _onMarkerPopupToggle!(
-      markerId,
-      isOpen,
-      latitude,
-      longitude,
-    );
-  }
-}
+  //   _onMarkerPopupToggle!(
+  //     markerId,
+  //     isOpen,
+  //     latitude,
+  //     longitude,
+  //   );
+  // }
 
   
   // Future<void> setClusterOptions({

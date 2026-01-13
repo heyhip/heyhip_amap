@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Base64;
 import android.util.Log;
 import android.util.LruCache;
+import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -51,9 +52,13 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.youthage.heyhip_amap.model.HeyhipMarkerIconModel;
 import com.youthage.heyhip_amap.model.HeyhipMarkerModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerPopupModel;
+import com.youthage.heyhip_amap.model.MarkerTag;
 
 import android.animation.ValueAnimator;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
@@ -70,10 +75,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private Map<String, Object> clusterStyle;
 
     // 是否开启marker弹窗
-    private boolean markerTapTogglePopup = false;
-    /// 当前“弹窗打开”的 marker id
-    @Nullable
-    private String activePopupMarkerId = null;
+    private boolean enableMarkerPopup = false;
 
 
 
@@ -206,6 +208,65 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             }
         });
 
+        // 设置弹窗
+        aMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
+
+            @Override
+            public View getInfoWindow(Marker marker) {
+
+                Object tag = marker.getObject();
+                if (!(tag instanceof MarkerTag)) return null;
+
+                MarkerTag markerTag = (MarkerTag) tag;
+                HeyhipMarkerPopupModel popup = markerTag.popup;
+                if (popup == null) return null;
+
+                View view = LayoutInflater.from(context)
+                        .inflate(R.layout.marker_info_window, null);
+
+                TextView title = view.findViewById(R.id.title);
+                TextView subtitle = view.findViewById(R.id.subtitle);
+                ImageView avatar = view.findViewById(R.id.avatar);
+
+                // ===== title =====
+                if (popup.title != null && !popup.title.isEmpty()) {
+                    title.setText(popup.title);
+                    title.setVisibility(View.VISIBLE);
+                } else {
+                    title.setVisibility(View.GONE);
+                }
+
+                // ===== subtitle =====
+                if (popup.subtitle != null && !popup.subtitle.isEmpty()) {
+                    subtitle.setText(popup.subtitle);
+                    subtitle.setVisibility(View.VISIBLE);
+                } else {
+                    subtitle.setVisibility(View.GONE);
+                }
+
+                // ===== avatar（你缺的核心逻辑）=====
+                if (popup.avatarUrl != null && !popup.avatarUrl.isEmpty()) {
+                    avatar.setVisibility(View.VISIBLE);
+
+                    Glide.with(view) // ⭐ 用 view，生命周期安全
+                            .load(popup.avatarUrl)
+                            .circleCrop()
+                            .into(avatar);
+                } else {
+                    avatar.setVisibility(View.GONE);
+                }
+
+                return view;
+            }
+
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                return null;
+            }
+        });
+
+
         // 监听marker点击
         aMap.setOnMarkerClickListener(marker -> {
 
@@ -223,43 +284,20 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             // =========================
             // 2️⃣ 点击的是「单点 marker」
             // =========================
-            if (tag instanceof String) {
-
-                String markerId = (String) tag;
-                LatLng position = marker.getPosition();
+            // if (tag instanceof String) {
+            if (tag instanceof MarkerTag) {
 
 
                 // =========================
                 // ⭐ marker 点击 toggle 逻辑
                 // =========================
-                if (markerTapTogglePopup) {
-
-                    if (markerId.equals(activePopupMarkerId)) {
-
-                        // 再次点击同一个 marker → 关闭
-                        activePopupMarkerId = null;
-
-                        if (channel != null) {
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("markerId", markerId);
-                            map.put("action", "close");
-                            channel.invokeMethod("onMarkerPopupToggle", map);
-                        }
-
+                if (enableMarkerPopup) {
+                    if (marker.isInfoWindowShown()) {
+                        marker.hideInfoWindow();
+                        notifyPopupToggle(marker, false);
                     } else {
-
-                        // 点击新的 marker
-                        activePopupMarkerId = markerId;
-
-                        if (channel != null) {
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("markerId", markerId);
-                            map.put("latitude", position.latitude);
-                            map.put("longitude", position.longitude);
-                            map.put("action", "open");
-                            channel.invokeMethod("onMarkerPopupToggle", map);
-                        }
-
+                        marker.showInfoWindow();
+                        notifyPopupToggle(marker, true);
                     }
 
                     return true;
@@ -271,6 +309,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 // ⭐ 原有：普通 marker 点击
                 // =========================
                 if (channel != null) {
+                    String markerId = (String) tag;
+                    LatLng position = marker.getPosition();
+
                     Map<String, Object> map = new HashMap<>();
                     map.put("markerId", markerId);
                     map.put("latitude", position.latitude);
@@ -325,9 +366,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             // =========================
             // 启用marker弹窗
             // =========================
-            Object toggle = params.get("markerTapTogglePopup");
-            if (toggle instanceof Boolean) {
-                markerTapTogglePopup = (Boolean) toggle;
+            Object popupObj = params.get("enableMarkerPopup");
+            if (popupObj instanceof Boolean) {
+                enableMarkerPopup = (Boolean) popupObj;
             }
 
 
@@ -866,9 +907,13 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     marker = aMap.addMarker(
                             new MarkerOptions()
                                     .position(item.latLng)
+                                    // .anchor(0.5f, 1.0f)
                                     .icon(buildItemIcon(model))
                     );
-                    marker.setObject(markerKey);
+
+
+                    marker.setObject(new MarkerTag(model.id, model.popup));
+
                     itemMarkers.put(markerKey, marker);
 
                     animateMarkerAppear(marker);
@@ -1306,6 +1351,21 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         map.put("longitude", latLng.longitude);
 
         channel.invokeMethod("onMapClick", map);
+    }
+
+    // 弹窗
+    private void notifyPopupToggle(Marker marker, boolean isOpen) {
+        if (channel == null) return;
+
+        LatLng p = marker.getPosition();
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("markerId", marker.getObject());
+        map.put("action", isOpen ? "open" : "close");
+        map.put("latitude", p.latitude);
+        map.put("longitude", p.longitude);
+
+        channel.invokeMethod("onMarkerPopupToggle", map);
     }
 
     // 开始移动

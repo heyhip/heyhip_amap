@@ -8,6 +8,7 @@ import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
+import 'package:heyhip_amap/heyhip_marker_popup.dart';
 import 'package:heyhip_amap/map_type.dart';
 import 'package:heyhip_amap/marker_icon.dart';
 
@@ -202,13 +203,15 @@ final List<HeyhipMarker> markers = [
     id: 'marker_8',
     latitude: 30.49,
     longitude: 104.09,
-    icon: MarkerIcon.asset('assets/images/point.png')
+    icon: MarkerIcon.asset('assets/images/point.png'),
+    popup: HeyhipMarkerPopup(title: "测试头像", avatarUrl: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
   ),
   HeyhipMarker(
     id: 'marker_9',
     latitude: 30.4901,
     longitude: 104.0901,
-    icon: MarkerIcon.asset('assets/images/point.png')
+    icon: MarkerIcon.asset('assets/images/point.png'),
+    popup: HeyhipMarkerPopup(title: "测试")
   )
 ];
 
@@ -230,6 +233,7 @@ final List<HeyhipMarker> markers = [
          latitude: 30.482251,
         longitude: 104.080003,
         zoom: 14,
+        enableMarkerPopup: true,
         mapType: MapType.normal,
         // clusterEnabled: true,
         // clusterStyle: ClusterStyle(
@@ -250,6 +254,14 @@ final List<HeyhipMarker> markers = [
               print('点击地图：${latLng.latitude}, ${latLng.longitude}');
               mapController.moveCamera(CameraPosition(target: latLng));
             });
+
+            mapController.onMarkerPopupToggle(
+      (markerId, isOpen, lat, lng) {
+        debugPrint(
+          'marker=$markerId popup=${isOpen ? "open" : "close"}',
+        );
+      },
+    );
 
              mapController.setMarkers(markers);
 

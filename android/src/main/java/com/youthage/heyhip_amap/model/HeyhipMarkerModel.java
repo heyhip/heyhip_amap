@@ -10,14 +10,19 @@ public class HeyhipMarkerModel {
     public final LatLng latLng;
     public final HeyhipMarkerIconModel icon;
 
+    // ⭐ 新增：popup
+    public final HeyhipMarkerPopupModel popup;
+
     private HeyhipMarkerModel(
             String id,
             LatLng latLng,
-            HeyhipMarkerIconModel icon
+            HeyhipMarkerIconModel icon,
+            HeyhipMarkerPopupModel popup
     ) {
         this.id = id;
         this.latLng = latLng;
         this.icon = icon;
+        this.popup = popup;
     }
 
     @SuppressWarnings("unchecked")
@@ -37,13 +42,19 @@ public class HeyhipMarkerModel {
         double lat = ((Number) latObj).doubleValue();
         double lng = ((Number) lngObj).doubleValue();
 
+        // icon（你已有）
         HeyhipMarkerIconModel icon =
                 HeyhipMarkerIconModel.fromMap(map);
+
+        // ⭐ popup（新增）
+        HeyhipMarkerPopupModel popup =
+                HeyhipMarkerPopupModel.fromMap(map.get("popup"));
 
         return new HeyhipMarkerModel(
                 id,
                 new LatLng(lat, lng),
-                icon
+                icon,
+                popup
         );
     }
 }

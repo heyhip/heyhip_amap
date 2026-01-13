@@ -4,6 +4,7 @@ import 'package:heyhip_amap/amap_ui_settings.dart';
 import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
+import 'package:heyhip_amap/heyhip_marker_popup.dart';
 import 'package:heyhip_amap/map_type.dart';
 
 class HeyhipAmapView extends StatelessWidget {
@@ -11,11 +12,12 @@ class HeyhipAmapView extends StatelessWidget {
   final double? longitude;
   final double? zoom;
   final MapType mapType;
+  // 是否开启聚合
   final bool clusterEnabled;
+  // 聚合样式
   final ClusterStyle? clusterStyle;
   /// 是否启用 marker 点击弹窗
-  final bool markerTapTogglePopup;
-
+  final bool enableMarkerPopup;
 
 
    /// ✅ 外部传入的 Controller
@@ -38,7 +40,7 @@ class HeyhipAmapView extends StatelessWidget {
     this.mapType = MapType.normal,
     this.clusterEnabled = false,
     this.clusterStyle,
-    this.markerTapTogglePopup = false,
+    this.enableMarkerPopup = false,
   });
 
   @override
@@ -53,7 +55,7 @@ class HeyhipAmapView extends StatelessWidget {
         'mapType': mapType.value,
         'clusterEnabled': clusterEnabled,
         'clusterStyle': clusterStyle?.toMap(),
-        'markerTapTogglePopup': markerTapTogglePopup,
+        'enableMarkerPopup': enableMarkerPopup,
       },
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,

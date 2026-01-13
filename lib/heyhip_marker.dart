@@ -1,3 +1,4 @@
+import 'package:heyhip_amap/heyhip_marker_popup.dart';
 import 'package:heyhip_amap/marker_icon.dart';
 
 class HeyhipMarker {
@@ -9,11 +10,15 @@ class HeyhipMarker {
 
   final MarkerIcon? icon;
 
+  // InfoWindow
+  final HeyhipMarkerPopup? popup;
+
   const HeyhipMarker({
     required this.id,
     required this.latitude,
     required this.longitude,
     this.icon,
+    this.popup,
   });
 
   /// ⭐ 统一协议：Android / iOS 共用
@@ -24,10 +29,9 @@ class HeyhipMarker {
       'longitude': longitude,
     };
 
-    if (icon != null) {
-      // ⭐ 关键：展开，而不是再包一层 icon
-      map.addAll(icon!.toMap());
-    }
+
+    if (icon != null) map.addAll(icon!.toMap());
+    if (popup != null) map['popup'] = popup!.toMap();
 
     return map;
   }
