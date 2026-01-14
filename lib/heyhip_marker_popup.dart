@@ -1,19 +1,19 @@
 class HeyhipMarkerPopup {
-  final String title;
+  final String? title;
   final String? subtitle;
-  final String? avatarUrl;
+  final String? avatar;
 
   const HeyhipMarkerPopup({
     required this.title,
     this.subtitle,
-    this.avatarUrl,
+    this.avatar,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'title': title,
       'subtitle': subtitle,
-      'avatarUrl': avatarUrl,
+      'avatar': avatar,
     };
   }
 }

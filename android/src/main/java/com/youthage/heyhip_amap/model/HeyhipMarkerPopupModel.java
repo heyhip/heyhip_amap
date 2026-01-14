@@ -6,19 +6,16 @@ public class HeyhipMarkerPopupModel {
 
     public final String title;
     public final String subtitle;
-    public final String avatar; // url / asset key / base64（你后面定）
-    public final String avatarUrl;
+    public final String avatar;
 
     private HeyhipMarkerPopupModel(
             String title,
             String subtitle,
-            String avatar,
-            String avatarUrl
+            String avatar
     ) {
         this.title = title;
         this.subtitle = subtitle;
         this.avatar = avatar;
-        this.avatarUrl = avatarUrl;
     }
 
     @SuppressWarnings("unchecked")
@@ -40,10 +37,6 @@ public class HeyhipMarkerPopupModel {
                 ? (String) map.get("avatar")
                 : null;
 
-        String avatarUrl = map.get("avatarUrl") instanceof String
-                ? (String) map.get("avatarUrl")
-                : null;
-
         // 至少有一个字段才认为 popup 有效
         if (title == null && subtitle == null && avatar == null) {
             return null;
@@ -52,8 +45,7 @@ public class HeyhipMarkerPopupModel {
         return new HeyhipMarkerPopupModel(
                 title,
                 subtitle,
-                avatar,
-                avatarUrl
+                avatar
         );
     }
 }

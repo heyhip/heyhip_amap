@@ -210,61 +210,81 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
         // 设置弹窗
         aMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
-
             @Override
             public View getInfoWindow(Marker marker) {
+                // Log.e("INFO", "getInfoWindow CALLED");
+                // Log.e("啊啊十大发射点发射点发", marker.getObject() + "");
+                // TextView tv = new TextView(context);
+                // tv.setText("TEST" + marker.getObject());
+                // tv.setBackgroundColor(Color.WHITE);
+                // return tv;
 
-                Object tag = marker.getObject();
-                if (!(tag instanceof MarkerTag)) return null;
-
-                MarkerTag markerTag = (MarkerTag) tag;
-                HeyhipMarkerPopupModel popup = markerTag.popup;
-                if (popup == null) return null;
-
-                View view = LayoutInflater.from(context)
-                        .inflate(R.layout.marker_info_window, null);
-
+                View view = LayoutInflater.from(context).inflate(R.layout.marker_info_window, null);
                 TextView title = view.findViewById(R.id.title);
-                TextView subtitle = view.findViewById(R.id.subtitle);
-                ImageView avatar = view.findViewById(R.id.avatar);
-
-                // ===== title =====
-                if (popup.title != null && !popup.title.isEmpty()) {
-                    title.setText(popup.title);
-                    title.setVisibility(View.VISIBLE);
-                } else {
-                    title.setVisibility(View.GONE);
-                }
-
-                // ===== subtitle =====
-                if (popup.subtitle != null && !popup.subtitle.isEmpty()) {
-                    subtitle.setText(popup.subtitle);
-                    subtitle.setVisibility(View.VISIBLE);
-                } else {
-                    subtitle.setVisibility(View.GONE);
-                }
-
-                // ===== avatar（你缺的核心逻辑）=====
-                if (popup.avatarUrl != null && !popup.avatarUrl.isEmpty()) {
-                    avatar.setVisibility(View.VISIBLE);
-
-                    Glide.with(view) // ⭐ 用 view，生命周期安全
-                            .load(popup.avatarUrl)
-                            .circleCrop()
-                            .into(avatar);
-                } else {
-                    avatar.setVisibility(View.GONE);
-                }
-
+                title.setText(marker.getObject() + "");
                 return view;
             }
-
 
             @Override
             public View getInfoContents(Marker marker) {
                 return null;
             }
         });
+
+        // aMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
+        //
+        //     @Override
+        //     public View getInfoWindow(Marker marker) {
+        //
+        //         Object tag = marker.getObject();
+        //         Log.e("啊啊啊啊啊啊", "啊啊啊啊啊啊");
+        //         Log.e("官方山豆根士大夫", (tag instanceof MarkerTag) + "");
+        //         Log.e("官方山豆根士大夫222222", (tag instanceof String) + "");
+        //         Log.e("官方山豆根士大夫33333", marker.getId() + "");
+        //         Log.e("官方山豆根士大夫33333", marker + "");
+        //         Log.e("官方山豆根士大夫33333", marker.getObject() + "");
+        //         // Log.e("官方山豆根士大夫33333", markerTagMap.get(marker).id + "");
+        //
+        //         if (!(tag instanceof MarkerTag)) return null;
+        //
+        //         MarkerTag markerTag = (MarkerTag) tag;
+        //         HeyhipMarkerPopupModel popup = markerTag.popup;
+        //         Log.e("哈哈哈哈哈", "哈哈哈哈哈");
+        //         if (popup == null) return null;
+        //         Log.e("aaaaaa", "aaaaa");
+        //
+        //
+        //         View view = LayoutInflater.from(context)
+        //                 .inflate(R.layout.marker_info_window, null);
+        //
+        //         TextView title = view.findViewById(R.id.title);
+        //         TextView subtitle = view.findViewById(R.id.subtitle);
+        //
+        //         // ===== title（可选）=====
+        //         if (popup.title != null && !popup.title.isEmpty()) {
+        //             title.setText(popup.title);
+        //             title.setVisibility(View.VISIBLE);
+        //         } else {
+        //             title.setVisibility(View.GONE);
+        //         }
+        //
+        //         // ===== subtitle（可选）=====
+        //         if (popup.subtitle != null && !popup.subtitle.isEmpty()) {
+        //             subtitle.setText(popup.subtitle);
+        //             subtitle.setVisibility(View.VISIBLE);
+        //         } else {
+        //             subtitle.setVisibility(View.GONE);
+        //         }
+        //
+        //         return view;
+        //     }
+        //
+        //     @Override
+        //     public View getInfoContents(Marker marker) {
+        //         return null;
+        //     }
+        // });
+
 
 
         // 监听marker点击
@@ -284,18 +304,20 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             // =========================
             // 2️⃣ 点击的是「单点 marker」
             // =========================
-            // if (tag instanceof String) {
-            if (tag instanceof MarkerTag) {
-
+            // if (tag instanceof MarkerTag) {
+            if (tag instanceof String) {
 
                 // =========================
                 // ⭐ marker 点击 toggle 逻辑
                 // =========================
                 if (enableMarkerPopup) {
+
                     if (marker.isInfoWindowShown()) {
+                        Log.e("这是关闭了", "这是关闭了");
                         marker.hideInfoWindow();
                         notifyPopupToggle(marker, false);
                     } else {
+                        Log.e("这是打开了", "这是打开了");
                         marker.showInfoWindow();
                         notifyPopupToggle(marker, true);
                     }
@@ -369,6 +391,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             Object popupObj = params.get("enableMarkerPopup");
             if (popupObj instanceof Boolean) {
                 enableMarkerPopup = (Boolean) popupObj;
+                Log.e("启用了弹窗吗：", enableMarkerPopup + "");
+
             }
 
 
@@ -719,7 +743,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             return;
         }
 
-        final Object markerTag = marker.getObject();
+        final Object mTag = marker.getObject();
 
         // 2️⃣ Glide 异步加载
         Glide.with(mapView.getContext())
@@ -736,7 +760,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     ) {
                         if (bitmap.isRecycled()) return;
 
-                        if (marker.getObject() != markerTag) return;
+                        if (marker.getObject() != mTag) return;
 
                         iconCache.put(cacheKey, bitmap);
 
@@ -908,16 +932,16 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                             new MarkerOptions()
                                     .position(item.latLng)
                                     // .anchor(0.5f, 1.0f)
-                                    .icon(buildItemIcon(model))
+                                    .icon(buildItemIcon(model.icon))
                     );
 
-
-                    marker.setObject(new MarkerTag(model.id, model.popup));
+                    marker.setObject(model.id);
 
                     itemMarkers.put(markerKey, marker);
 
                     animateMarkerAppear(marker);
                 } else {
+                    Log.e("无无无无无无无无无", "wuwuwuwuwuuwu五五五五五五五五");
                     marker.setPosition(item.latLng);
                 }
 
@@ -961,6 +985,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     animateMarkerAppear(marker);
 
                 } else {
+
                     marker.setPosition(cluster.center);
 
                     ClusterTag tag = (ClusterTag) marker.getObject();
@@ -1019,9 +1044,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         return null;
     }
 
-    private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerModel model) {
+    // private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerModel model) {
+    private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerIconModel icon) {
 
-        HeyhipMarkerIconModel icon = model.icon;
+        // HeyhipMarkerIconModel icon = model.icon;
         if (icon == null) {
             return BitmapDescriptorFactory.defaultMarker();
         }
@@ -1359,8 +1385,19 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
         LatLng p = marker.getPosition();
 
+        String markerId = "";
+
+        Object tag = marker.getObject();
+        // if (tag instanceof MarkerTag) {
+        //     markerId = ((MarkerTag) tag).id;
+        // }
+        Log.e("这是要返回的：", tag + "");
+        if (tag instanceof String) {
+            markerId = (String) tag;
+        }
+
         Map<String, Object> map = new HashMap<>();
-        map.put("markerId", marker.getObject());
+        map.put("markerId", markerId);
         map.put("action", isOpen ? "open" : "close");
         map.put("latitude", p.latitude);
         map.put("longitude", p.longitude);

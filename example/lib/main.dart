@@ -204,7 +204,7 @@ final List<HeyhipMarker> markers = [
     latitude: 30.49,
     longitude: 104.09,
     icon: MarkerIcon.asset('assets/images/point.png'),
-    popup: HeyhipMarkerPopup(title: "测试头像", avatarUrl: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
+    popup: HeyhipMarkerPopup(title: "测试头像", subtitle: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
   ),
   HeyhipMarker(
     id: 'marker_9',
