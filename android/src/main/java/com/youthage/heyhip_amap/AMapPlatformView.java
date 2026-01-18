@@ -1,20 +1,22 @@
 package com.youthage.heyhip_amap;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +32,13 @@ import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.youthage.heyhip_amap.model.HeyhipMarkerIconModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerPopupModel;
+import com.youthage.heyhip_amap.model.MarkerTag;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,24 +51,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.flutter.embedding.engine.loader.FlutterLoader;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
-import io.flutter.embedding.engine.loader.FlutterLoader;
-
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.target.CustomTarget;
-import com.bumptech.glide.request.transition.Transition;
-import com.youthage.heyhip_amap.model.HeyhipMarkerIconModel;
-import com.youthage.heyhip_amap.model.HeyhipMarkerModel;
-import com.youthage.heyhip_amap.model.HeyhipMarkerPopupModel;
-import com.youthage.heyhip_amap.model.MarkerTag;
-
-import android.animation.ValueAnimator;
-import android.view.animation.DecelerateInterpolator;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
@@ -755,19 +750,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 });
     }
 
-
-    // 打开弹窗
-    private void openMarkerPopup(String markerId, Marker marker) {
-        Log.d("HeyhipAmap", "open popup: " + markerId);
-    }
-
-    // 关闭弹窗
-    private void closeMarkerPopup(String markerId) {
-        Log.d("HeyhipAmap", "close popup: " + markerId);
-    }
-
-
-
     // 移动地图
     private void moveCamera(MethodCall call, MethodChannel.Result result) {
 
@@ -1357,15 +1339,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
         LatLng p = marker.getPosition();
 
-        String markerId = "";
-
-        Object tag = marker.getObject();
-        if (tag instanceof String) {
-            markerId = (String) tag;
-        }
-
         Map<String, Object> map = new HashMap<>();
-        map.put("markerId", markerId);
+        map.put("markerId", marker.getId());
         map.put("action", isOpen ? "open" : "close");
         map.put("latitude", p.latitude);
         map.put("longitude", p.longitude);
