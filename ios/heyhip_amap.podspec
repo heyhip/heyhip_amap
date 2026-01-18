@@ -15,6 +15,7 @@ A new Flutter project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
+  s.dependency 'AMap3DMap'   # 高德地图
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.

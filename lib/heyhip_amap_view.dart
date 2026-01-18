@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
@@ -45,9 +46,9 @@ class HeyhipAmapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AndroidView(
-      viewType: 'heyhip_amap_map',
-      creationParams: {
+
+    String viewType = 'heyhip_amap_map';
+    final creationParams = {
         'latitude': latitude,
         'longitude': longitude,
         'zoom': zoom,
@@ -56,7 +57,20 @@ class HeyhipAmapView extends StatelessWidget {
         'clusterEnabled': clusterEnabled,
         'clusterStyle': clusterStyle?.toMap(),
         'enableMarkerPopup': enableMarkerPopup,
-      },
+      };
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return UiKitView(
+        viewType: viewType,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
+        onPlatformViewCreated: _onPlatformViewCreated,
+        );
+    }
+
+    return AndroidView(
+      viewType: viewType,
+      creationParams: creationParams,
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,
     );

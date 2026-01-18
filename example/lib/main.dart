@@ -16,12 +16,14 @@ void main() {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "793edbd4b3de840b61e4f1673e30b068");
+  // HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "793edbd4b3de840b61e4f1673e30b068");
   // 笔记本电脑
   // HeyhipAmap.initKey(androidKey: "d34d4dfce1761181098d1ae3bde58a33", iosKey: "793edbd4b3de840b61e4f1673e30b068");
 
-  
+  HeyhipAmap.initKey(androidKey: "8669320b0376e085d9f6eacc409e14dc", iosKey: "793edbd4b3de840b61e4f1673e30b068");
   HeyhipAmap.updatePrivacy(hasAgree: true, hasShow: true, hasContains: true);
+
+  
 
   runApp(const MyApp());
 }
