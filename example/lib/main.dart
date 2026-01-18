@@ -266,6 +266,12 @@ final List<HeyhipMarker> markers = [
       },
     );
 
+    mapController.onMarkerClick((id, laglng) {
+debugPrint(
+          'marker=${id}',
+        );
+    });
+
              mapController.setMarkers(markers);
 
         },
