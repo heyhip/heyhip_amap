@@ -161,7 +161,8 @@ final List<HeyhipMarker> markers = [
     id: 'marker_1',
     latitude: 30.482251,
     longitude: 104.080003,
-    icon: MarkerIcon.asset('assets/images/point.png')
+    icon: MarkerIcon.asset('assets/images/point.png'),
+    popup: HeyhipMarkerPopup(title: "豆腐干恢复低功耗的法国", subtitle: "发生的固化速度发货速度发送给对方", avatar: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
   ),
   HeyhipMarker(
     id: 'marker_2',
@@ -185,7 +186,8 @@ final List<HeyhipMarker> markers = [
     id: 'marker_5',
     latitude: 30.482651,
     longitude: 104.080403,
-    icon: MarkerIcon.asset('assets/images/point.png')
+    icon: MarkerIcon.asset('assets/images/point.png'),
+    popup: HeyhipMarkerPopup(title: "孙大发噶啥都是打工的是法国士大夫")
   ),
   HeyhipMarker(
     id: 'marker_6',
@@ -197,14 +199,15 @@ final List<HeyhipMarker> markers = [
     id: 'marker_7',
     latitude: 30.4833,
     longitude: 104.0811,
-    icon: MarkerIcon.asset('assets/images/point.png')
+    icon: MarkerIcon.asset('assets/images/point.png'),
+    popup: HeyhipMarkerPopup(title: "房管局地方各级地方规划局法规和", subtitle: "但是发发啊手动阀手动阀山豆根士大夫嘎斯")
   ),
   HeyhipMarker(
     id: 'marker_8',
     latitude: 30.49,
     longitude: 104.09,
     icon: MarkerIcon.asset('assets/images/point.png'),
-    popup: HeyhipMarkerPopup(title: "测试头像", subtitle: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
+    popup: HeyhipMarkerPopup(title: "测试头像", subtitle: "这撒旦发射点", avatar: "https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg")
   ),
   HeyhipMarker(
     id: 'marker_9',

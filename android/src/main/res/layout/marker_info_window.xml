@@ -1,35 +1,56 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
-    android:padding="10dp"
-    android:background="@drawable/marker_info_bg"
+    android:orientation="vertical"
+    android:background="@android:color/transparent"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
-     <ImageView
-        android:id="@+id/avatar"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:visibility="gone"/>
 
+    <!-- 气泡主体（只有这里有背景） -->
     <LinearLayout
-        android:orientation="vertical"
-        android:layout_marginStart="8dp"
+        android:orientation="horizontal"
+        android:padding="5dp"
+        android:background="@drawable/marker_info_bg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="#333333"/>
+        <ImageView
+            android:id="@+id/avatar"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="2dp"
+            android:background="@drawable/avatar_border"
+            android:visibility="gone"/>
 
-        <TextView
-            android:id="@+id/subtitle"
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_marginStart="8dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#666666"/>
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="#333333"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:visibility="gone"/>
+        </LinearLayout>
+
     </LinearLayout>
+
+    <!-- 向下箭头（在背景外） -->
+    <View
+        android:layout_width="12dp"
+        android:layout_height="6dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/marker_info_arrow"/>
 </LinearLayout>
