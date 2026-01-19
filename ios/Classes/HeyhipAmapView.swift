@@ -27,17 +27,10 @@ import MAMapKit
 
 public class HeyhipAmapView: NSObject, FlutterPlatformView {
 
-    private let containerView: UIView
   private let mapView: MAMapView
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
 
-      
-
-       self.containerView = UIView(frame: frame)
-       self.containerView.backgroundColor = .systemBlue
-       self.containerView.backgroundColor = UIColor.red
-      
     // ⭐ 创建地图
     mapView = MAMapView(frame: frame)
 
@@ -61,18 +54,13 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView {
           animated: false
         )
         mapView.zoomLevel = CGFloat(zoom)
-          mapView.backgroundColor = UIColor.red
-
       }
     }
-      
-      self.containerView.addSubview(mapView)
 
     super.init()
   }
 
   public func view() -> UIView {
-//    return mapView
-      return containerView
+    return mapView
   }
 }

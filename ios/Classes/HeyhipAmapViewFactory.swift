@@ -11,9 +11,9 @@ class HeyhipAmapViewFactory: NSObject, FlutterPlatformViewFactory {
   }
 
   // ⭐⭐⭐ 必须实现（iOS 17+）
-//  func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
-//    return FlutterStandardMessageCodec.sharedInstance()
-//  }
+  func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
+    return FlutterStandardMessageCodec.sharedInstance()
+  }
 
   func create(
     withFrame frame: CGRect,

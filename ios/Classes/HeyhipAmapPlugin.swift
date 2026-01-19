@@ -3,6 +3,7 @@ import UIKit
 import MAMapKit
 
 
+
 public class HeyhipAmapPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "heyhip_amap", binaryMessenger: registrar.messenger())
@@ -23,6 +24,7 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin {
     switch call.method {
 
       case "initKey":
+     
         guard let args = call.arguments as? [String: Any] else {
             result(
               FlutterError(
@@ -45,64 +47,27 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin {
             return
           }
     
-       
         AMapServices.shared().apiKey = key
-        
-        
+
       result(nil)
 
     case "updatePrivacy":
-      guard let args = call.arguments as? [String: Any] else {
-        result(
-          FlutterError(
-            code: "INVALID_ARGS",
-            message: "arguments missing",
-            details: nil
-          )
-        )
-        return
-      }
+        guard let args = call.arguments as? [String: Any] else {
+            result(FlutterError(code: "INVALID_ARGS", message: "arguments missing", details: nil))
+            return
+        }
 
-      guard
-        let hasContains = args["hasContains"] as? Bool,
-        let hasShow = args["hasShow"] as? Bool,
-        let hasAgree = args["hasAgree"] as? Bool
-      else {
-        result(
-          FlutterError(
-            code: "INVALID_ARGS",
-            message: "privacy args missing",
-            details: nil
-          )
-        )
-        return
-      }
- 
-        // ⚠️ 顺序非常重要（官方要求）
-//         AMapServices.shared().setPrivacyHasShown(hasShow ? .didShow : .notShow)
-//         AMapServices.shared().setPrivacyHasContained(hasContains ? .didContain : .notContain)
-//         AMapServices.shared().setPrivacyHasAgreed(hasAgree ? .didAgree : .notAgree)
-//        
-//        let services = AMapServices.shared()
-//        services.setshow
-//
-//        services.setPrivacyHasContained(
-//            hasContains
-//              ? AMapPrivacyInfoStatus.didContain
-//              : AMapPrivacyInfoStatus.notContain
-//          )
-//
-//          services.setPrivacyHasShown(
-//            hasShow
-//              ? AMapPrivacyShowStatus.didShow
-//              : AMapPrivacyShowStatus.notShow
-//          )
-//
-//          services.setPrivacyHasAgreed(
-//            hasAgree
-//              ? AMapPrivacyAgreeStatus.didAgree
-//              : AMapPrivacyAgreeStatus.notAgree
-//          )
+        let hasContains = args["hasContains"] as? Bool ?? false
+        let hasShow = args["hasShow"] as? Bool ?? false
+        let hasAgree = args["hasAgree"] as? Bool ?? false
+
+        if (!hasShow || !hasContains || !hasAgree) {
+            result(FlutterError(code: "INVALID_ARGS", message: "Agree to the Privacy Policy", details: nil))
+            return
+        }
+        
+        MAMapView.updatePrivacyShow(AMapPrivacyShowStatus.didShow, privacyInfo: AMapPrivacyInfoStatus.didContain)
+        MAMapView.updatePrivacyAgree(AMapPrivacyAgreeStatus.didAgree)
 
       result(nil)
 
