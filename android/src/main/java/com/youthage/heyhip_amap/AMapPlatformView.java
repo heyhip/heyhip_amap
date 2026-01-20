@@ -85,7 +85,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private Integer initMapType;
 
     // 持续移动节流
-    private static final long CAMERA_MOVE_THROTTLE_MS = 120;
+    private static final long CAMERA_MOVE_THROTTLE_MS = 200;
     private long lastCameraMoveTime = 0;
 
     // 自定义，用于有开始移动功能

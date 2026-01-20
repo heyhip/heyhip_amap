@@ -100,16 +100,25 @@ class HeyhipAmapController {
 
         case 'onCameraIdle':
           final map = Map<String, dynamic>.from(call.arguments);
+          // debugPrint("hahahahahahahahahahah");
+          // debugPrint(call.arguments.toString());
+          // debugPrint("为什么没有");
           _onCameraIdle?.call(CameraPosition.fromMap(map));
           break;
 
         case 'onCameraMove':
           final map = Map<String, dynamic>.from(call.arguments);
+          // debugPrint("反反复复反反复复");
+          // debugPrint(call.arguments.toString());
+          // debugPrint("给哥哥哥哥哥哥");
           _onCameraMove?.call(CameraPosition.fromMap(map));
           break;
         
         case 'onCameraMoveStart':
           final map = Map<String, dynamic>.from(call.arguments);
+          // debugPrint("奋斗故事的风格");
+          // debugPrint(call.arguments.toString());
+          // debugPrint("各方恢复的更好");
           _onCameraMoveStart?.call(CameraPosition.fromMap(map));
           break;
 

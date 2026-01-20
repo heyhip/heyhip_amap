@@ -256,6 +256,42 @@ final List<HeyhipMarker> markers = [
            
           });
 
+          mapController.onCameraMove((position) {
+
+
+              // final LatLng target;
+  // final double? zoom;
+  // final double? tilt;
+  // final double? bearing;
+  var lat = position.target.latitude;
+  var lng = position.target.longitude;
+  var zoom = position.zoom;
+  var tilt = position.tilt;
+ debugPrint(
+          '持续移动：LatLng=$lat latlng=$lng zoom=$zoom tilt=$tilt',
+        );
+          });
+
+          mapController.onCameraIdle((position) {
+  var lat = position.target.latitude;
+  var lng = position.target.longitude;
+  var zoom = position.zoom;
+  var tilt = position.tilt;
+ debugPrint(
+          '移动结束：LatLng=$lat latlng=$lng zoom=$zoom tilt=$tilt',
+        );
+          });
+
+          mapController.onCameraMoveStart((position) {
+  var lat = position.target.latitude;
+  var lng = position.target.longitude;
+  var zoom = position.zoom;
+  var tilt = position.tilt;
+ debugPrint(
+          '移动开始：LatLng=$lat latlng=$lng zoom=$zoom tilt=$tilt',
+        );
+          });
+
           mapController.onMapClick((latLng) {
               print('点击地图：${latLng.latitude}, ${latLng.longitude}');
               mapController.moveCamera(CameraPosition(target: latLng));

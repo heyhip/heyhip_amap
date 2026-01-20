@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
@@ -65,6 +66,11 @@ class HeyhipAmapView extends StatelessWidget {
         creationParams: creationParams,
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
+        // gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+        //     Factory<OneSequenceGestureRecognizer>(
+        //       () => EagerGestureRecognizer(),
+        //     ),
+        //   },
         );
     }
 
