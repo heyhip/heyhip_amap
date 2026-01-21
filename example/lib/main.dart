@@ -241,7 +241,9 @@ final List<HeyhipMarker> markers = [
         zoom: 14,
         enableMarkerPopup: true,
         enableCameraMoving: false,
-
+        uiSettings: AMapUiSettings(
+          // scaleControlsEnabled: true
+        ),
         mapType: MapType.normal,
         // clusterEnabled: true,
         // clusterStyle: ClusterStyle(

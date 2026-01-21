@@ -87,6 +87,33 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
               enableCameraMoving = enableMoving
           }
           
+          if let ui = params["uiSettings"] as? [String: Any] {
+              // ===== 指南针 =====
+                if let compass = ui["compassEnabled"] as? Bool {
+                  mapView.showsCompass = compass
+                }
+
+                // ===== 比例尺 =====
+                if let scale = ui["scaleControlsEnabled"] as? Bool {
+                  mapView.showsScale = scale
+                }
+
+                // ===== 旋转手势 =====
+                if let rotate = ui["rotateGesturesEnabled"] as? Bool {
+                  mapView.isRotateEnabled = rotate
+                }
+
+                // ===== 倾斜（仰角）手势 =====
+                if let tilt = ui["tiltGesturesEnabled"] as? Bool {
+                  mapView.isRotateCameraEnabled = tilt
+                }
+
+                // ===== 缩放手势 =====
+                if let zoomGesture = ui["zoomGesturesEnabled"] as? Bool {
+                  mapView.isZoomEnabled = zoomGesture
+                }
+          }
+          
       }
       
      
