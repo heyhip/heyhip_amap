@@ -34,6 +34,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     
     private var annotations: [String: MAPointAnnotation] = [:]
     
+ 
+    // 是否开启持续移动
+    private var enableCameraMoving: Bool = false
+
     
     // 用于持续移动
     private var isUserMoving = false
@@ -78,16 +82,23 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
           )
           mapView.zoomLevel = CGFloat(zoom)
         }
+          
+          if let enableMoving = params["enableCameraMoving"] as? Bool {
+              enableCameraMoving = enableMoving
+          }
+          
       }
+      
+     
       
       
 
     // ⭐ 最基础配置（不开定位）
-      mapView.isScrollEnabled = true // 此属性用于地图滑动手势的开启和关闭
-      mapView.isZoomEnabled = true // 此属性用于地图缩放手势的开启和关闭
-      mapView.isRotateEnabled = true // 此属性用于地图旋转手势的开启和关闭
-      mapView.isRotateCameraEnabled = true // 此属性用于地图仰角手势的开启和关闭
-//      mapView.isShowTraffic = true
+//      mapView.isScrollEnabled = true // 此属性用于地图滑动手势的开启和关闭
+//      mapView.isZoomEnabled = true // 此属性用于地图缩放手势的开启和关闭
+//      mapView.isRotateEnabled = true // 此属性用于地图旋转手势的开启和关闭
+//      mapView.isRotateCameraEnabled = true // 此属性用于地图仰角手势的开启和关闭
+////      mapView.isShowTraffic = true
       
       
 
@@ -278,8 +289,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     ) {
       guard wasUserAction else { return }
         
-        isUserMoving = true
-          startDisplayLink()
+        if enableCameraMoving {
+            isUserMoving = true
+              startDisplayLink()
+        }
+       
         
         let center = mapView.centerCoordinate
 
@@ -299,8 +313,12 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     ) {
       guard wasUserAction else { return }
 
-      isUserMoving = false
-        stopDisplayLink()
+      
+        
+        if enableCameraMoving {
+            isUserMoving = false
+              stopDisplayLink()
+        }
         
       let center = mapView.centerCoordinate
 

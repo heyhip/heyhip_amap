@@ -20,6 +20,8 @@ class HeyhipAmapView extends StatelessWidget {
   final ClusterStyle? clusterStyle;
   /// 是否启用 marker 点击弹窗
   final bool enableMarkerPopup;
+  /// 是否开启持续移动
+  final bool enableCameraMoving;
 
 
    /// ✅ 外部传入的 Controller
@@ -30,6 +32,8 @@ class HeyhipAmapView extends StatelessWidget {
 
   /// ⭐ UI 设置
   final AMapUiSettings uiSettings;
+
+  
 
   const HeyhipAmapView({
     super.key,
@@ -43,6 +47,7 @@ class HeyhipAmapView extends StatelessWidget {
     this.clusterEnabled = false,
     this.clusterStyle,
     this.enableMarkerPopup = false,
+    this.enableCameraMoving = false,
   });
 
   @override
@@ -58,6 +63,7 @@ class HeyhipAmapView extends StatelessWidget {
         'clusterEnabled': clusterEnabled,
         'clusterStyle': clusterStyle?.toMap(),
         'enableMarkerPopup': enableMarkerPopup,
+        'enableCameraMoving': enableCameraMoving,
       };
 
     if (defaultTargetPlatform == TargetPlatform.iOS) {

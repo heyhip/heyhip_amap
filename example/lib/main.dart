@@ -240,6 +240,8 @@ final List<HeyhipMarker> markers = [
         longitude: 104.080003,
         zoom: 14,
         enableMarkerPopup: true,
+        enableCameraMoving: false,
+
         mapType: MapType.normal,
         // clusterEnabled: true,
         // clusterStyle: ClusterStyle(

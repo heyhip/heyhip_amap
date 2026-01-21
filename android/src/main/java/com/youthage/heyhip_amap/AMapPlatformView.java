@@ -73,6 +73,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     // 是否开启marker弹窗
     private boolean enableMarkerPopup = false;
 
+    // 是否开启持续移动
+    private boolean enableCameraMoving = false;
+    
 
 
 
@@ -192,7 +195,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 }
 
                 // ⭐ 地图正在拖动 / 缩放 / 旋转
-                notifyCameraMoving(cameraPosition); // 持续（已节流）
+                if (enableCameraMoving) {
+                    notifyCameraMoving(cameraPosition); // 持续（已节流）
+                }
+                
             }
 
             @Override
@@ -334,6 +340,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                         : 14f;
             }
 
+            
+
             // 地图类型
             Object type = params.get("mapType");
             if (type instanceof Number) {
@@ -363,6 +371,15 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             if (popupObj instanceof Boolean) {
                 enableMarkerPopup = (Boolean) popupObj;
             }
+
+            // =========================
+            // 是否启用持续移动
+            // =========================
+            Object ecm = params.get("enableCameraMoving");
+            if (ecm instanceof Boolean) {
+                enableCameraMoving = (Boolean) ecm;
+            }
+
 
 
         }
