@@ -455,10 +455,16 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             case "setZoom":
                 handleSetZoom(call, result);
                 break;
+            case "setMapType":
+                Integer type = call.arguments instanceof Integer ? (Integer) call.arguments : null;
+                if (type != null && aMap != null) {
+                    applyMapType(type);
+                }
+                result.success(null);
+                break;
             case "getCameraPosition":
                 handleGetCameraPosition(result);
                 break;
-
             default:
                 result.notImplemented();
         }

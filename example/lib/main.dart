@@ -245,7 +245,7 @@ final List<HeyhipMarker> markers = [
           // scaleControlsEnabled: true
         ),
         mapType: MapType.normal,
-        // clusterEnabled: true,
+        clusterEnabled: true,
         // clusterStyle: ClusterStyle(
         //   bgColor: Color(0xFFE91E63),
         //   textColor: Colors.blue,

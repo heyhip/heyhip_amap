@@ -270,6 +270,24 @@ class HeyhipAmapController {
     }
   }
 
+  /// 动态设置地图类型
+  Future<void> setMapType(int mapType) async {
+    if (!_attached || _channel == null) {
+      throw StateError('AMapController is not attached to a map');
+    }
+
+    Future<void> action() {
+      return _channel!.invokeMethod('setMapType', mapType);
+    }
+
+    if (_mapReady) {
+      await action();
+    } else {
+      _pendingActions.add(action);
+    }
+  }
+
+
 
   // // 弹窗
   // void _handleMarkerPopupToggle(dynamic args) {
