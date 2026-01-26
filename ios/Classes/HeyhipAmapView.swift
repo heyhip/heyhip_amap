@@ -2,11 +2,32 @@ import Flutter
 import UIKit
 import MAMapKit
 
+class HeyhipAmapContainerView: UIView {
+
+    let mapView: MAMapView
+
+    init(frame: CGRect, mapView: MAMapView) {
+        self.mapView = mapView
+        super.init(frame: frame)
+        addSubview(mapView)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        mapView.frame = bounds
+        NSLog("[HeyhipAmap] layoutSubviews bounds = %@", NSCoder.string(for: bounds))
+    }
+}
 
 
 public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
-
+    private let containerView: HeyhipAmapContainerView
+    
     private let mapView: MAMapView
     
     private let channel: FlutterMethodChannel
@@ -35,7 +56,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     private var clusterStyle: [String: Any]?
 
 
-
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
       
       self.channel = FlutterMethodChannel(
@@ -44,6 +64,12 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
       // ⭐ 创建地图
       self.mapView = MAMapView(frame: frame)
+      
+      
+      self.containerView = HeyhipAmapContainerView(
+                  frame: frame,
+                  mapView: mapView
+              )
 
       super.init()
       
@@ -146,7 +172,8 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
         print("mapView.frame =", mapView.frame)
 
         
-      return mapView
+//      return mapView
+        return self.containerView
     }
     
     // 地图类型
@@ -228,6 +255,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
         call: FlutterMethodCall,
         result: @escaping FlutterResult
     ) {
+        
+        NSLog("🔥 HeyhipAmapView init")
+
         guard
             let args = call.arguments as? [String: Any],
             let markers = args["markers"] as? [[String: Any]]

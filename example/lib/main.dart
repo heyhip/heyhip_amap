@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:get/route_manager.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
 import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/cluster_style.dart';
@@ -11,6 +13,7 @@ import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/heyhip_marker_popup.dart';
 import 'package:heyhip_amap/map_type.dart';
 import 'package:heyhip_amap/marker_icon.dart';
+import 'package:heyhip_amap_example/HomeController.dart';
 
 void main() async {
 
@@ -223,7 +226,9 @@ final List<HeyhipMarker> markers = [
   
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+
+    Get.put(Homecontroller());
+    return GetMaterialApp(
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Plugin example app'),
@@ -235,7 +240,12 @@ final List<HeyhipMarker> markers = [
     SizedBox(
       width: double.infinity,
       height: 500,
-      child: HeyhipAmapView(
+      child: 
+      
+      GetBuilder<Homecontroller>(
+        id: Homecontroller.to.iddd,
+        builder: (logic) {
+          return HeyhipAmapView(
          latitude: 30.482251,
         longitude: 104.080003,
         zoom: 14,
@@ -257,6 +267,9 @@ final List<HeyhipMarker> markers = [
           mapController.onMapLoadFinish(() {
             print("地图完成");
 
+            mapController.setMarkers(markers);
+
+            
            
           });
 
@@ -319,7 +332,10 @@ debugPrint(
 
         },
         
-      ),
+      );
+      }),
+      
+      
     ),
 
     Expanded(
@@ -349,6 +365,13 @@ debugPrint(
             InkWell(
               onTap: getPosition,
               child: const Text('获取Pos'),
+            ),
+
+
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: Homecontroller.to.updateIddd,
+              child: const Text('更新get'),
             ),
           ],
         ),
