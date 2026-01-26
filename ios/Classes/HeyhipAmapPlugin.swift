@@ -48,6 +48,7 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin {
           }
     
         AMapServices.shared().apiKey = key
+//        AMapServices.shared().enableHTTPS = true
 
       result(nil)
 

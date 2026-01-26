@@ -245,13 +245,13 @@ final List<HeyhipMarker> markers = [
           // scaleControlsEnabled: true
         ),
         mapType: MapType.normal,
-        clusterEnabled: true,
-        // clusterStyle: ClusterStyle(
-        //   bgColor: Color(0xFFE91E63),
-        //   textColor: Colors.blue,
-        //   showStroke: true,
-        //   strokeColor: Colors.black
-        // ),
+        clusterEnabled: false,
+        clusterStyle: ClusterStyle(
+          bgColor: Color(0xFFE91E63),
+          textColor: Colors.blue,
+          showStroke: true,
+          strokeColor: Colors.black
+        ),
         controller: mapController,
         onMapCreated: () {
           mapController.onMapLoadFinish(() {
