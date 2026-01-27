@@ -246,9 +246,9 @@ final List<HeyhipMarker> markers = [
         id: Homecontroller.to.iddd,
         builder: (logic) {
           return HeyhipAmapView(
-         latitude: 30.482251,
-        longitude: 104.080003,
-        zoom: 14,
+        //  latitude: 30.482251,
+        // longitude: 104.080003,
+        // zoom: 14,
         enableMarkerPopup: true,
         enableCameraMoving: false,
         uiSettings: AMapUiSettings(
@@ -370,7 +370,10 @@ debugPrint(
 
             const SizedBox(height: 20),
             InkWell(
-              onTap: Homecontroller.to.updateIddd,
+              onTap: () {
+                //  Homecontroller.to.updateIddd();
+                mapController.moveCamera(CameraPosition(target: LatLng(30.482251, 104.080003), zoom: 14));
+              },
               child: const Text('更新get'),
             ),
           ],

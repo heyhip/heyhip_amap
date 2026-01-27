@@ -2,31 +2,10 @@ import Flutter
 import UIKit
 import MAMapKit
 
-class HeyhipAmapContainerView: UIView {
-
-    let mapView: MAMapView
-
-    init(frame: CGRect, mapView: MAMapView) {
-        self.mapView = mapView
-        super.init(frame: frame)
-        addSubview(mapView)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        mapView.frame = bounds
-        NSLog("[HeyhipAmap] layoutSubviews bounds = %@", NSCoder.string(for: bounds))
-    }
-}
 
 
 public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
-    private let containerView: HeyhipAmapContainerView
     
     private let mapView: MAMapView
     
@@ -64,17 +43,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
       // ⭐ 创建地图
       self.mapView = MAMapView(frame: frame)
+      mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
       
-      
-      self.containerView = HeyhipAmapContainerView(
-                  frame: frame,
-                  mapView: mapView
-              )
 
       super.init()
-      
-    
-      mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
       mapView.delegate = self
       
@@ -165,15 +137,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
   }
     
     public func view() -> UIView {
-    // ⚠️ Flutter 布局完成后，这里才是正确大小
-  //      print("🧭 mapView.delegate =", mapView.delegate as Any)
-  //      mapView.frame = UIScreen.main.bounds
-        
-        print("mapView.frame =", mapView.frame)
-
-        
-//      return mapView
-        return self.containerView
+      return mapView
     }
     
     // 地图类型
@@ -470,6 +434,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     
     deinit {
         stopDisplayLink()
+        channel.setMethodCallHandler(nil)
         mapView.delegate = nil
     }
 
