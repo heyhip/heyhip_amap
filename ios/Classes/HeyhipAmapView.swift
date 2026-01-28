@@ -3,43 +3,177 @@ import UIKit
 import MAMapKit
 
 
+
+
+struct HeyhipMarkerPopup {
+    let title: String?
+    let subtitle: String?
+    let avatar: String?
+
+    init(map: [String: Any]) {
+        self.title = map["title"] as? String
+        self.subtitle = map["subtitle"] as? String
+        self.avatar = map["avatar"] as? String
+    }
+}
+
+
 class HeyhipPointAnnotation: MAPointAnnotation {
   var iconInfo: [String: Any]?
-    var popup: [String: Any]?
+    var popup: HeyhipMarkerPopup?
 }
 
-class HeyhipInfoWindowView: UIView {
+final class TriangleView: UIView {
 
-  init(popup: [String: Any]) {
-    super.init(frame: CGRect(x: 0, y: 0, width: 220, height: 80))
+    override func draw(_ rect: CGRect) {
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
+        path.addLine(to: CGPoint(x: rect.width / 2, y: rect.height))
+        path.close()
 
-    backgroundColor = .white
-    layer.cornerRadius = 8
-    layer.shadowColor = UIColor.black.cgColor
-    layer.shadowOpacity = 0.15
-    layer.shadowRadius = 6
-    layer.shadowOffset = CGSize(width: 0, height: 2)
-
-    let titleLabel = UILabel()
-    titleLabel.font = .boldSystemFont(ofSize: 14)
-    titleLabel.text = popup["title"] as? String
-    titleLabel.frame = CGRect(x: 12, y: 10, width: 196, height: 18)
-    addSubview(titleLabel)
-
-    if let subtitle = popup["subtitle"] as? String {
-      let subLabel = UILabel()
-      subLabel.font = .systemFont(ofSize: 12)
-      subLabel.textColor = .darkGray
-      subLabel.text = subtitle
-      subLabel.frame = CGRect(x: 12, y: 32, width: 196, height: 16)
-      addSubview(subLabel)
+        UIColor.white.setFill()
+        path.fill()
     }
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
 }
+
+
+
+final class HeyhipInfoWindowView: UIView {
+
+    init(popup: HeyhipMarkerPopup) {
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        setupUI(popup: popup)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupUI(popup: HeyhipMarkerPopup) {
+
+        // =========================
+        // 容器（竖向）
+        // =========================
+        let container = UIStackView()
+        container.axis = .vertical
+        container.alignment = .center
+        container.spacing = 0
+        addSubview(container)
+
+        container.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: topAnchor),
+            container.bottomAnchor.constraint(equalTo: bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: trailingAnchor)
+        ])
+
+        // =========================
+        // 气泡主体
+        // =========================
+        let bubble = UIView()
+        bubble.backgroundColor = .white
+        bubble.layer.cornerRadius = 10
+        bubble.layer.masksToBounds = true
+        bubble.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 阴影
+        bubble.layer.shadowColor = UIColor.black.cgColor
+        bubble.layer.shadowOpacity = 0.15
+        bubble.layer.shadowRadius = 4
+        bubble.layer.shadowOffset = CGSize(width: 0, height: 2)
+        bubble.layer.masksToBounds = false
+
+
+        container.addArrangedSubview(bubble)
+
+        // =========================
+        // 横向内容
+        // =========================
+        let contentStack = UIStackView()
+        contentStack.axis = .horizontal
+        contentStack.alignment = .center
+        contentStack.spacing = 8
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+
+        bubble.addSubview(contentStack)
+
+        NSLayoutConstraint.activate([
+            contentStack.topAnchor.constraint(equalTo: bubble.topAnchor, constant: 6),
+            contentStack.bottomAnchor.constraint(equalTo: bubble.bottomAnchor, constant: -6),
+            contentStack.leadingAnchor.constraint(equalTo: bubble.leadingAnchor, constant: 8),
+            contentStack.trailingAnchor.constraint(equalTo: bubble.trailingAnchor, constant: -8),
+        ])
+
+        // =========================
+        // avatar
+        // =========================
+        if let avatar = popup.avatar, !avatar.isEmpty {
+            let imageView = UIImageView()
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            imageView.layer.cornerRadius = 18
+            imageView.layer.masksToBounds = true
+            imageView.layer.borderWidth = 1
+            imageView.layer.borderColor = UIColor.white.cgColor
+            imageView.backgroundColor = .lightGray
+
+            NSLayoutConstraint.activate([
+                imageView.widthAnchor.constraint(equalToConstant: 36),
+                imageView.heightAnchor.constraint(equalToConstant: 36)
+            ])
+
+            contentStack.addArrangedSubview(imageView)
+
+            // 你可以后面接 SDWebImage / Kingfisher
+        }
+
+        // =========================
+        // 文本区域
+        // =========================
+        let textStack = UIStackView()
+        textStack.axis = .vertical
+        textStack.spacing = 2
+        textStack.alignment = .leading
+
+        if let title = popup.title {
+            let label = UILabel()
+            label.text = title
+            label.font = .systemFont(ofSize: 14, weight: .medium)
+            label.textColor = UIColor(white: 0.2, alpha: 1)
+            textStack.addArrangedSubview(label)
+        }
+
+        if let subtitle = popup.subtitle {
+            let label = UILabel()
+            label.text = subtitle
+            label.font = .systemFont(ofSize: 12)
+            label.textColor = UIColor(white: 0.4, alpha: 1)
+            textStack.addArrangedSubview(label)
+        }
+
+        contentStack.addArrangedSubview(textStack)
+
+        // =========================
+        // 箭头
+        // =========================
+        let arrow = TriangleView()
+        arrow.backgroundColor = .clear
+        arrow.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            arrow.widthAnchor.constraint(equalToConstant: 12),
+            arrow.heightAnchor.constraint(equalToConstant: 6)
+        ])
+
+        container.addArrangedSubview(arrow)
+    }
+}
+
+
+
+
 
 
 
@@ -309,8 +443,12 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
               ann.iconInfo = icon
             }
             
-            if let popup = item["popup"] as? [String: Any] {
-              ann.popup = popup
+//            if let popup = item["popup"] as? [String: Any] {
+//              ann.popup = popup
+//            }
+            
+            if let popupMap = item["popup"] as? [String: Any] {
+                ann.popup = HeyhipMarkerPopup(map: popupMap)
             }
             
             annotations[id] = ann
@@ -523,6 +661,14 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
             return
           }
         
+        
+//        showInfoWindow(for: annotation, from: view)
+        // ⚠️ 核心：延迟到下一帧再算坐标
+            DispatchQueue.main.async {
+                self.showInfoWindow(for: annotation, from: view)
+            }
+        
+        /*
         // ===== 情况 2：点击了其他 marker → 先关旧的 =====
           showingInfoWindow?.removeFromSuperview()
           showingInfoWindow = nil
@@ -535,24 +681,79 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
           }
 
           // ===== 创建 InfoWindow =====
-          let infoView = HeyhipInfoWindowView(popup: popup)
+        let infoView = HeyhipInfoWindowView(popup: popup)
 
-          infoView.center = CGPoint(
-            x: view.bounds.width / 2,
-            y: -infoView.bounds.height / 2 - 8
-          )
+        // ① 强制 layout，让 AutoLayout 算出真实尺寸
+        infoView.layoutIfNeeded()
 
-          view.addSubview(infoView)
+        // ② 让内容决定 size
+        let size = infoView.systemLayoutSizeFitting(
+          UIView.layoutFittingCompressedSize
+        )
+
+        // ③ 设置 frame（关键）
+        infoView.frame = CGRect(
+          x: (view.bounds.width - size.width) / 2,
+          y: -size.height - 8,   // 👈 只往上，不要再减 marker 高度
+          width: size.width,
+          height: size.height
+        )
+
+        view.addSubview(infoView)
+
 
           // ===== 记录当前状态 =====
           showingInfoWindow = infoView
           showingAnnotation = annotation
 
+        
+        */
+        
+        
           // 立刻取消系统选中态（否则会影响再次点击）
           mapView.deselectAnnotation(annotation, animated: false)
         
         
     }
+    
+    
+    private func showInfoWindow(
+      for annotation: HeyhipPointAnnotation,
+      from markerView: MAAnnotationView
+    ) {
+        // 关闭旧的
+        showingInfoWindow?.removeFromSuperview()
+        showingInfoWindow = nil
+        showingAnnotation = nil
+
+        guard let popup = annotation.popup else { return }
+
+        let infoView = HeyhipInfoWindowView(popup: popup)
+
+        // ⚠️ 不要用 AutoLayout
+        infoView.translatesAutoresizingMaskIntoConstraints = true
+
+        // ① 先算 size（关键）
+        let size = infoView.systemLayoutSizeFitting(
+            UIView.layoutFittingCompressedSize
+        )
+
+        // ② 设置 frame
+        infoView.frame = CGRect(
+            x: (markerView.bounds.width - size.width) / 2,
+            y: -size.height - 6, // 只往上，不减 marker 高度
+            width: size.width,
+            height: size.height
+        )
+
+        // ③ 加到 markerView
+        markerView.addSubview(infoView)
+
+        showingInfoWindow = infoView
+        showingAnnotation = annotation
+    }
+
+
 
     
     
