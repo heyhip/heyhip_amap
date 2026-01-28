@@ -14,7 +14,8 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin {
     // ⭐ 先注册一个“占位用”的 PlatformView
     registrar.register(
       // HeyhipAmapViewFactory(),
-      HeyhipAmapViewFactory(messenger: registrar.messenger()),
+        HeyhipAmapViewFactory(messenger: registrar.messenger(), registrar: registrar),
+      
       withId: "heyhip_amap_map"
     )
 

@@ -3,6 +3,45 @@ import UIKit
 import MAMapKit
 
 
+class HeyhipPointAnnotation: MAPointAnnotation {
+  var iconInfo: [String: Any]?
+    var popup: [String: Any]?
+}
+
+class HeyhipInfoWindowView: UIView {
+
+  init(popup: [String: Any]) {
+    super.init(frame: CGRect(x: 0, y: 0, width: 220, height: 80))
+
+    backgroundColor = .white
+    layer.cornerRadius = 8
+    layer.shadowColor = UIColor.black.cgColor
+    layer.shadowOpacity = 0.15
+    layer.shadowRadius = 6
+    layer.shadowOffset = CGSize(width: 0, height: 2)
+
+    let titleLabel = UILabel()
+    titleLabel.font = .boldSystemFont(ofSize: 14)
+    titleLabel.text = popup["title"] as? String
+    titleLabel.frame = CGRect(x: 12, y: 10, width: 196, height: 18)
+    addSubview(titleLabel)
+
+    if let subtitle = popup["subtitle"] as? String {
+      let subLabel = UILabel()
+      subLabel.font = .systemFont(ofSize: 12)
+      subLabel.textColor = .darkGray
+      subLabel.text = subtitle
+      subLabel.frame = CGRect(x: 12, y: 32, width: 196, height: 16)
+      addSubview(subLabel)
+    }
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+}
+
+
 
 public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
@@ -10,6 +49,15 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     private let mapView: MAMapView
     
     private let channel: FlutterMethodChannel
+    
+    private let registrar: FlutterPluginRegistrar
+
+    // 当前正在显示 InfoWindow 的 annotation
+    private weak var showingAnnotation: HeyhipPointAnnotation?
+
+    // 当前显示的 InfoWindow view
+    private weak var showingInfoWindow: UIView?
+
     
     
     private var annotations: [String: MAPointAnnotation] = [:]
@@ -35,7 +83,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     private var clusterStyle: [String: Any]?
 
 
-  init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
+  init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger, registrar: FlutterPluginRegistrar) {
+      
+      self.registrar = registrar
       
       self.channel = FlutterMethodChannel(
         name: "heyhip_amap_map_\(viewId)", binaryMessenger: messenger
@@ -168,6 +218,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
       channel.invokeMethod("onMapLoaded", arguments: nil)
     }
+
     
     // 移动相机
     private func handleMoveCamera(
@@ -219,8 +270,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
         call: FlutterMethodCall,
         result: @escaping FlutterResult
     ) {
-        
-        NSLog("🔥 HeyhipAmapView init")
 
         guard
             let args = call.arguments as? [String: Any],
@@ -248,13 +297,22 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
                 let lng = item["longitude"] as? Double
             else { continue }
 
-            let ann = MAPointAnnotation()
+//            let ann = MAPointAnnotation()
+            let ann = HeyhipPointAnnotation()
             ann.coordinate = CLLocationCoordinate2D(
                 latitude: lat,
                 longitude: lng
             )
             ann.title = id
 
+            if let icon = item["icon"] as? [String: Any] {
+              ann.iconInfo = icon
+            }
+            
+            if let popup = item["popup"] as? [String: Any] {
+              ann.popup = popup
+            }
+            
             annotations[id] = ann
         }
 
@@ -265,6 +323,130 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
         result(nil)
     }
+    
+    
+    
+    public func mapView(
+      _ mapView: MAMapView,
+      viewFor annotation: MAAnnotation
+    ) -> MAAnnotationView? {
+
+      guard let ann = annotation as? HeyhipPointAnnotation else {
+        return nil
+      }
+
+      let reuseId = "heyhip_marker"
+      var view = mapView.dequeueReusableAnnotationView(
+        withIdentifier: reuseId
+      )
+
+      if view == nil {
+        view = MAAnnotationView(
+          annotation: ann,
+          reuseIdentifier: reuseId
+        )
+      }
+
+      view?.annotation = ann
+      view?.canShowCallout = false
+    view?.image = nil
+        
+        
+        
+        // ===== InfoWindow =====
+        view?.subviews
+          .filter { $0 is HeyhipInfoWindowView }
+          .forEach { $0.removeFromSuperview() }
+
+//        if let popup = ann.popup {
+//          let infoView = HeyhipInfoWindowView(popup: popup)
+//
+//          infoView.center = CGPoint(
+//            x: view!.bounds.width / 2,
+//            y: -infoView.bounds.height / 2 - 8
+//          )
+//
+//          view?.addSubview(infoView)
+//        }
+        
+        view?.canShowCallout = false
+        view?.subviews.forEach { sub in
+          if sub is HeyhipInfoWindowView {
+            sub.removeFromSuperview()
+          }
+        }
+
+
+
+      // ⭐ 处理 icon
+      if let iconInfo = ann.iconInfo,
+         let type = iconInfo["type"] as? String {
+
+        switch type {
+
+        case "asset":
+//          if let path = iconInfo["value"] as? String {
+//            view?.image = UIImage(named: path)
+//          }
+            
+            if let path = iconInfo["value"] as? String {
+//                let key = registrar.lookupKey(forAsset: path)
+//                view?.image = UIImage(contentsOfFile: key)
+                
+                let assetKey = registrar.lookupKey(forAsset: path)
+                let assetPath = Bundle.main.path(forResource: assetKey, ofType: nil)
+                view?.image = assetPath.flatMap { UIImage(contentsOfFile: $0) }
+
+              }
+
+        case "network":
+          if let urlStr = iconInfo["value"] as? String,
+             let url = URL(string: urlStr) {
+            // ⚠️ 建议后面用 SDWebImage
+            DispatchQueue.global().async {
+              if let data = try? Data(contentsOf: url),
+                 let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                  view?.image = image
+                }
+              }
+            }
+          }
+
+        case "base64":
+          if let base64 = iconInfo["value"] as? String,
+             let data = Data(base64Encoded: base64),
+             let image = UIImage(data: data) {
+            view?.image = image
+          }
+
+        default:
+          break
+        }
+      }
+        
+        // ===== 强烈推荐：尺寸 + 锚点 =====
+        let width = (ann.iconInfo?["iconWidth"] as? Double) ?? 40
+        let height = (ann.iconInfo?["iconHeight"] as? Double) ?? 40
+
+        view?.bounds = CGRect(
+          x: 0,
+          y: 0,
+          width: width,
+          height: height
+        )
+
+        // 让 marker 底部对准经纬度点（和 Android / 高德一致）
+        view?.centerOffset = CGPoint(
+          x: 0,
+          y: -height / 2
+        )
+
+      return view
+    }
+
+    
+    
 
     
     // 设置zoom
@@ -313,10 +495,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       didSelect view: MAAnnotationView
     ) {
         // 立刻取消选中
-          mapView.deselectAnnotation(view.annotation, animated: false)
+//          mapView.deselectAnnotation(view.annotation, animated: false)
         
       guard
-        let annotation = view.annotation as? MAPointAnnotation,
+        let annotation = view.annotation as? HeyhipPointAnnotation,
         let markerId = annotation.title
       else {
         return
@@ -329,6 +511,47 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       ]
 
       channel.invokeMethod("onMarkerClick", arguments: args)
+        
+        
+        // ===== 情况 1：再次点击同一个 marker → 关闭 =====
+          if showingAnnotation === annotation {
+            showingInfoWindow?.removeFromSuperview()
+            showingInfoWindow = nil
+            showingAnnotation = nil
+
+            mapView.deselectAnnotation(annotation, animated: false)
+            return
+          }
+        
+        // ===== 情况 2：点击了其他 marker → 先关旧的 =====
+          showingInfoWindow?.removeFromSuperview()
+          showingInfoWindow = nil
+          showingAnnotation = nil
+
+          // ===== 没有 popup 不显示 =====
+          guard let popup = annotation.popup else {
+            mapView.deselectAnnotation(annotation, animated: false)
+            return
+          }
+
+          // ===== 创建 InfoWindow =====
+          let infoView = HeyhipInfoWindowView(popup: popup)
+
+          infoView.center = CGPoint(
+            x: view.bounds.width / 2,
+            y: -infoView.bounds.height / 2 - 8
+          )
+
+          view.addSubview(infoView)
+
+          // ===== 记录当前状态 =====
+          showingInfoWindow = infoView
+          showingAnnotation = annotation
+
+          // 立刻取消系统选中态（否则会影响再次点击）
+          mapView.deselectAnnotation(annotation, animated: false)
+        
+        
     }
 
     
@@ -338,6 +561,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       _ mapView: MAMapView,
       didSingleTappedAt coordinate: CLLocationCoordinate2D
     ) {
+        
+        showingInfoWindow?.removeFromSuperview()
+          showingInfoWindow = nil
+          showingAnnotation = nil
+        
       let args: [String: Any] = [
         "latitude": coordinate.latitude,
         "longitude": coordinate.longitude
@@ -413,6 +641,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
     @objc private func onDisplayLinkTick() {
       guard isUserMoving else { return }
+        guard mapView.window != nil else { return }
         
         let now = CACurrentMediaTime()
           guard now - lastMoveCallbackTime >= moveCallbackInterval else {

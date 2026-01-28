@@ -4,9 +4,11 @@ import UIKit
 class HeyhipAmapViewFactory: NSObject, FlutterPlatformViewFactory {
 
   private let messenger: FlutterBinaryMessenger
+  private let registrar: FlutterPluginRegistrar
 
-  init(messenger: FlutterBinaryMessenger) {
+  init(messenger: FlutterBinaryMessenger, registrar: FlutterPluginRegistrar) {
     self.messenger = messenger
+    self.registrar = registrar
     super.init()
   }
 
@@ -27,7 +29,8 @@ class HeyhipAmapViewFactory: NSObject, FlutterPlatformViewFactory {
       frame: frame,
       viewId: viewId,
       args: args,
-      messenger: messenger
+      messenger: messenger,
+      registrar: registrar
     )
   }
 }
