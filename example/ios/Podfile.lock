@@ -6,8 +6,12 @@ PODS:
   - heyhip_amap (0.0.1):
     - AMap3DMap
     - Flutter
+    - SDWebImage
   - integration_test (0.0.1):
     - Flutter
+  - SDWebImage (5.21.5):
+    - SDWebImage/Core (= 5.21.5)
+  - SDWebImage/Core (5.21.5)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -18,6 +22,7 @@ SPEC REPOS:
   trunk:
     - AMap3DMap
     - AMapFoundation
+    - SDWebImage
 
 EXTERNAL SOURCES:
   Flutter:
@@ -31,8 +36,9 @@ SPEC CHECKSUMS:
   AMap3DMap: e67fc1a66bd83b82b44a06b601864d9fb3db3de0
   AMapFoundation: 9885c48fc3a78fdfb84a0299a2293e56ea3c9fec
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  heyhip_amap: 67c2dc5e4f95cb80b12148be23d14e5655716443
+  heyhip_amap: 27a9ebdbdc26e7ca1df8fc01c436f5f8887d93ae
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
 
 PODFILE CHECKSUM: ff8c0f61190f4729a64978238dc4835e27f1cf61
 

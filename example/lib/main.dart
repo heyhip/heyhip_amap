@@ -242,10 +242,12 @@ final List<HeyhipMarker> markers = [
       height: 500,
       child: 
       
-      GetBuilder<Homecontroller>(
-        id: Homecontroller.to.iddd,
-        builder: (logic) {
-          return HeyhipAmapView(
+      // GetBuilder<Homecontroller>(
+      //   id: Homecontroller.to.iddd,
+      //   builder: (logic) {
+      //     return 
+          
+          HeyhipAmapView(
         //  latitude: 30.482251,
         // longitude: 104.080003,
         // zoom: 14,
@@ -332,8 +334,9 @@ debugPrint(
 
         },
         
-      );
-      }),
+      // );
+      // }
+      ),
       
       
     ),

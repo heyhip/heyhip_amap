@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import MAMapKit
+import SDWebImage
 
 
 
@@ -125,8 +126,27 @@ final class HeyhipInfoWindowView: UIView {
             ])
 
             contentStack.addArrangedSubview(imageView)
+            
+            // ✅ 关键：加载图片
+//            if let url = URL(string: avatar) {
+//                DispatchQueue.global().async {
+//                    if let data = try? Data(contentsOf: url),
+//                       let image = UIImage(data: data) {
+//                        DispatchQueue.main.async {
+//                            imageView.image = image
+//                        }
+//                    }
+//                }
+//            }
 
             // 你可以后面接 SDWebImage / Kingfisher
+            if let url = URL(string: avatar) {
+                    imageView.sd_setImage(
+                        with: url,
+                        placeholderImage: nil,
+                        options: [.retryFailed, .continueInBackground]
+                    )
+                }
         }
 
         // =========================
