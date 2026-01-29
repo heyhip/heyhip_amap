@@ -251,13 +251,13 @@ final List<HeyhipMarker> markers = [
         //  latitude: 30.482251,
         // longitude: 104.080003,
         // zoom: 14,
-        enableMarkerPopup: true,
+        enableMarkerPopup: false,
         enableCameraMoving: false,
         uiSettings: AMapUiSettings(
           // scaleControlsEnabled: true
         ),
         mapType: MapType.normal,
-        clusterEnabled: false,
+        clusterEnabled: true,
         clusterStyle: ClusterStyle(
           bgColor: Color(0xFFE91E63),
           textColor: Colors.blue,

@@ -182,6 +182,57 @@ final class HeyhipInfoWindowView: UIView {
 
 
 
+// 聚合
+final class ClusterItem {
+    let id: String
+    let coordinate: CLLocationCoordinate2D
+
+    init(id: String, coordinate: CLLocationCoordinate2D) {
+        self.id = id
+        self.coordinate = coordinate
+    }
+}
+
+
+final class Cluster {
+    var items: [ClusterItem] = []
+    var center: CLLocationCoordinate2D = .init(latitude: 0, longitude: 0)
+}
+
+private func latLngToWorldPoint(
+    _ coord: CLLocationCoordinate2D,
+    zoomLevel: Int
+) -> CGPoint {
+
+    let siny = min(max(sin(coord.latitude * .pi / 180), -0.9999), 0.9999)
+
+    let x = 256 * (0.5 + coord.longitude / 360)
+    let y = 256 * (0.5 - log((1 + siny) / (1 - siny)) / (4 * .pi))
+
+    let scale = pow(2.0, Double(zoomLevel))
+
+    return CGPoint(
+        x: x * scale,
+        y: y * scale
+    )
+}
+
+
+func clusterGridSize(for zoom: CGFloat) -> Int {
+    if zoom > 13 {
+        return 0   // 🔥 13 级以上，不聚合
+    } else if zoom > 11 {
+        return 60
+    } else if zoom > 9 {
+        return 80
+    } else {
+        return 120
+    }
+}
+
+
+
+
 
 
 
@@ -463,9 +514,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
         }
 
         // ③ 一次性加到地图
-        if !annotations.isEmpty {
-            mapView.addAnnotations(Array(annotations.values))
-        }
+//        if !annotations.isEmpty {
+//            mapView.addAnnotations(Array(annotations.values))
+//        }
+        
+        refreshClusters()
 
         result(nil)
     }
@@ -476,6 +529,54 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       _ mapView: MAMapView,
       viewFor annotation: MAAnnotation
     ) -> MAAnnotationView? {
+        
+        // ===== 聚合点 =====
+        if annotation.title == "cluster" {
+
+            let reuseId = "clusterView"
+            var view = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId)
+
+            if view == nil {
+                view = MAAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
+                view?.canShowCallout = false
+            }
+
+            let count = Int(annotation.subtitle ?? "0") ?? 0
+
+            let size: CGFloat
+            switch count {
+            case 0..<10:  size = 36
+            case 10..<50: size = 42
+            case 50..<100: size = 48
+            default: size = 54
+            }
+
+            view?.frame = CGRect(x: 0, y: 0, width: size, height: size)
+            view?.centerOffset = CGPoint(x: 0, y: -size / 2)
+
+            // 清掉旧内容（⚠️ 非常重要）
+            view?.subviews.forEach { $0.removeFromSuperview() }
+
+            // 背景圆
+            let bg = UIView(frame: view!.bounds)
+            bg.backgroundColor = UIColor.systemBlue
+            bg.layer.cornerRadius = size / 2
+            bg.layer.masksToBounds = true
+
+            // 数字
+            let label = UILabel(frame: bg.bounds)
+            label.text = "\(count)"
+            label.textAlignment = .center
+            label.textColor = .white
+            label.font = UIFont.boldSystemFont(ofSize: 14)
+
+            bg.addSubview(label)
+            view?.addSubview(bg)
+
+            return view
+        }
+
+
 
       guard let ann = annotation as? HeyhipPointAnnotation else {
         return nil
@@ -592,7 +693,138 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
     }
 
     
+    // 聚合
+    private func buildClusters(
+        items: [ClusterItem],
+        gridSize: Int,
+        zoomLevel: Int
+    ) -> [Cluster] {
+
+        guard gridSize > 0 else {
+            return items.map {
+                let c = Cluster()
+                c.items = [$0]
+                c.center = $0.coordinate
+                return c
+            }
+        }
+
+        var gridMap: [String: Cluster] = [:]
+        var clusters: [Cluster] = []
+
+        for item in items {
+            let p = latLngToWorldPoint(item.coordinate, zoomLevel: zoomLevel)
+
+            let gx = Int(p.x) / gridSize
+            let gy = Int(p.y) / gridSize
+            let key = "\(gx)_\(gy)"
+
+            let cluster = gridMap[key] ?? {
+                let c = Cluster()
+                gridMap[key] = c
+                clusters.append(c)
+                return c
+            }()
+
+            cluster.items.append(item)
+        }
+
+        // 计算中心点
+        for cluster in clusters {
+            let count = Double(cluster.items.count)
+            let lat = cluster.items.reduce(0) { $0 + $1.coordinate.latitude }
+            let lng = cluster.items.reduce(0) { $0 + $1.coordinate.longitude }
+
+            cluster.center = CLLocationCoordinate2D(
+                latitude: lat / count,
+                longitude: lng / count
+            )
+        }
+
+        return clusters
+    }
+
     
+    
+    
+    
+    // ======================
+    // 刷新聚合（核心）
+    // ======================
+    private func refreshClusters() {
+        
+
+        // 1️⃣ 如果没开聚合，直接显示原始 marker
+        guard clusterEnabled else {
+            mapView.removeAnnotations(mapView.annotations)
+            mapView.addAnnotations(Array(annotations.values))
+            return
+        }
+
+        let zoomLevel = Int(mapView.zoomLevel)
+        let gridSize = clusterGridSize(for: mapView.zoomLevel)
+        
+
+        // 2️⃣ 原始 marker → ClusterItem
+        let items: [ClusterItem] = annotations.values.compactMap {
+            guard let id = $0.title else { return nil }
+            return ClusterItem(id: id, coordinate: $0.coordinate)
+        }
+
+        // 3️⃣ 算聚合
+        let clusters = buildClusters(
+            items: items,
+            gridSize: gridSize,
+            zoomLevel: zoomLevel
+        )
+
+        // 4️⃣ 清空地图上所有 annotation
+        mapView.removeAnnotations(mapView.annotations)
+
+        // 5️⃣ 重新生成 annotation
+        var newAnnotations: [MAPointAnnotation] = []
+
+        for cluster in clusters {
+            if cluster.items.count == 1 {
+                // ===== 单点：用你原来的 HeyhipPointAnnotation =====
+                let item = cluster.items[0]
+                if let ann = annotations[item.id] {
+                    newAnnotations.append(ann)
+                }
+            } else {
+                // ===== 聚合点 =====
+                let ann = MAPointAnnotation()
+                ann.coordinate = cluster.center
+//                ann.title = "cluster_\(cluster.items.count)"
+                ann.title = "cluster"
+                ann.subtitle = "\(cluster.items.count)"
+                newAnnotations.append(ann)
+            }
+        }
+
+        // 6️⃣ 加回地图
+        mapView.addAnnotations(newAnnotations)
+    }
+
+    
+    
+    public func mapView(
+      _ mapView: MAMapView,
+      mapDidZoomByUser wasUserAction: Bool
+    ) {
+        guard wasUserAction else { return }
+
+        refreshClusters()
+    }
+
+    
+    public func mapView(
+        _ mapView: MAMapView,
+        regionDidChangeAnimated animated: Bool
+    ) {
+        refreshClusters()
+    }
+
 
     
     // 设置zoom
@@ -820,6 +1052,8 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
             isUserMoving = false
               stopDisplayLink()
         }
+        
+        refreshClusters()
         
       let center = mapView.centerCoordinate
 
