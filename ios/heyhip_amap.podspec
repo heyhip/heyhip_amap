@@ -15,8 +15,12 @@ A new Flutter project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'AMap3DMap'   # 高德地图
-  s.dependency 'AMapSearch'   # 搜索
+  # s.dependency 'AMap3DMap'   # 高德地图
+  # s.dependency 'AMapSearch'   # 搜索
+   # 🔒 高德 iOS SDK 固定版本
+  s.dependency 'AMapFoundation', '1.8.2'
+  s.dependency 'AMap3DMap', '10.1.600'
+  s.dependency 'AMapSearch', '9.7.4'
   s.dependency 'SDWebImage'
   s.platform = :ios, '13.0'
 

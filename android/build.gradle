@@ -42,7 +42,25 @@ android {
     dependencies {
 
         // ✅ 高德
-        implementation 'com.amap.api:3dmap:latest.integration'
+        // implementation 'com.amap.api:3dmap:latest.integration'
+        // 高德基础库
+        implementation 'com.amap.api:base:3.8.0'
+
+        // 3D 地图（核心）
+        implementation 'com.amap.api:3dmap:9.8.3'
+
+        // 搜索（POI / 周边 / 逆地理）
+        implementation 'com.amap.api:search:9.7.4'
+
+        /*
+        Installing AMap3DMap (10.1.600)
+        Installing AMapFoundation (1.8.2)
+        Installing AMapSearch (9.7.4)
+        Installing Flutter (1.0.0)
+        Installing SDWebImage (5.21.5)
+        Installing heyhip_amap (0.0.1)
+        Installing integration_test (0.0.1)
+        */
 
         implementation 'com.github.bumptech.glide:glide:4.16.0'
         annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
