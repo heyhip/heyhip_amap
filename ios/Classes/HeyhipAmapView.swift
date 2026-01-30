@@ -250,7 +250,8 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
     // 当前显示的 InfoWindow view
     private weak var showingInfoWindow: UIView?
-
+    private var enableMarkerPopup: Bool = false
+    
     
     
     private var annotations: [String: MAPointAnnotation] = [:]
@@ -349,6 +350,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
           if let style = params["clusterStyle"] as? [String: Any] {
               clusterStyle = style
+          }
+          
+          if let popup = params["enableMarkerPopup"] as? Bool {
+              enableMarkerPopup = popup
           }
 
           
@@ -808,6 +813,8 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
 
     
     
+    
+    
     public func mapView(
       _ mapView: MAMapView,
       mapDidZoomByUser wasUserAction: Bool
@@ -872,41 +879,99 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       _ mapView: MAMapView,
       didSelect view: MAAnnotationView
     ) {
-        // 立刻取消选中
-//          mapView.deselectAnnotation(view.annotation, animated: false)
         
-      guard
-        let annotation = view.annotation as? HeyhipPointAnnotation,
-        let markerId = annotation.title
-      else {
-        return
-      }
+        
+        // ===== 0️⃣ 聚合点：什么都不做（交给 view 点击）=====
+        if view.annotation?.title == "cluster" {
+            return
+        }
 
-      let args: [String: Any] = [
-        "markerId": markerId,
-        "latitude": annotation.coordinate.latitude,
-        "longitude": annotation.coordinate.longitude
-      ]
+        guard let annotation = view.annotation as? HeyhipPointAnnotation,
+              let markerId = annotation.title
+        else {
+            return
+        }
+        
+        
+        // =========================
+        // 1️⃣ enableMarkerPopup = true → 只做 popup toggle
+        // =========================
+        if enableMarkerPopup {
 
-      channel.invokeMethod("onMarkerClick", arguments: args)
-        
-        
-        // ===== 情况 1：再次点击同一个 marker → 关闭 =====
-          if showingAnnotation === annotation {
-            showingInfoWindow?.removeFromSuperview()
-            showingInfoWindow = nil
-            showingAnnotation = nil
+            // 再次点击同一个 → 关闭
+            if showingAnnotation === annotation {
+                showingInfoWindow?.removeFromSuperview()
+                showingInfoWindow = nil
+                showingAnnotation = nil
+
+                mapView.deselectAnnotation(annotation, animated: false)
+                return
+            }
+
+            // 点击其他 marker → 关旧的，开新的
+            DispatchQueue.main.async {
+                self.showInfoWindow(for: annotation, from: view)
+            }
 
             mapView.deselectAnnotation(annotation, animated: false)
             return
-          }
+        }
+        
+        
+        // =========================
+        // 2️⃣ enableMarkerPopup = false → 回调 onMarkerClick
+        // =========================
+        let args: [String: Any] = [
+            "markerId": markerId,
+            "latitude": annotation.coordinate.latitude,
+            "longitude": annotation.coordinate.longitude
+        ]
+
+        channel.invokeMethod("onMarkerClick", arguments: args)
+
+        mapView.deselectAnnotation(annotation, animated: false)
+        
+        
+        
+        
+        
+        
+        
+        // 立刻取消选中
+//          mapView.deselectAnnotation(view.annotation, animated: false)
+        
+//      guard
+//        let annotation = view.annotation as? HeyhipPointAnnotation,
+//        let markerId = annotation.title
+//      else {
+//        return
+//      }
+//
+//      let args: [String: Any] = [
+//        "markerId": markerId,
+//        "latitude": annotation.coordinate.latitude,
+//        "longitude": annotation.coordinate.longitude
+//      ]
+//
+//      channel.invokeMethod("onMarkerClick", arguments: args)
+//        
+//        
+//        // ===== 情况 1：再次点击同一个 marker → 关闭 =====
+//          if showingAnnotation === annotation {
+//            showingInfoWindow?.removeFromSuperview()
+//            showingInfoWindow = nil
+//            showingAnnotation = nil
+//
+//            mapView.deselectAnnotation(annotation, animated: false)
+//            return
+//          }
         
         
 //        showInfoWindow(for: annotation, from: view)
         // ⚠️ 核心：延迟到下一帧再算坐标
-            DispatchQueue.main.async {
-                self.showInfoWindow(for: annotation, from: view)
-            }
+//            DispatchQueue.main.async {
+//                self.showInfoWindow(for: annotation, from: view)
+//            }
         
         /*
         // ===== 情况 2：点击了其他 marker → 先关旧的 =====
@@ -951,7 +1016,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
         
         
           // 立刻取消系统选中态（否则会影响再次点击）
-          mapView.deselectAnnotation(annotation, animated: false)
+//          mapView.deselectAnnotation(annotation, animated: false)
         
         
     }
