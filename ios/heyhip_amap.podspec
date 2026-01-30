@@ -16,6 +16,7 @@ A new Flutter project.
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
   s.dependency 'AMap3DMap'   # 高德地图
+  s.dependency 'AMapSearch'   # 搜索
   s.dependency 'SDWebImage'
   s.platform = :ios, '13.0'
 

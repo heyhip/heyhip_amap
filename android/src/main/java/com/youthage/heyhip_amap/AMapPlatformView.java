@@ -56,6 +56,12 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.poisearch.PoiResult;
+import com.amap.api.services.poisearch.PoiSearch;
+import com.amap.api.services.poisearch.PoiItem;
+
+
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
 
@@ -454,6 +460,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 break;
             case "setZoom":
                 handleSetZoom(call, result);
+                break;
+            case "searchPoisByLatLng":
+                handleSearchPoisByLatLng(call, result);
                 break;
             case "setMapType":
                 Integer type = call.arguments instanceof Integer ? (Integer) call.arguments : null;
@@ -1318,6 +1327,114 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         aMap.moveCamera(CameraUpdateFactory.zoomTo(zoom.floatValue()));
         result.success(null);
     }
+
+
+    private void handleSearchPoisByLatLng(
+        MethodCall call,
+        MethodChannel.Result result
+    ) {
+        if (mapView == null) {
+            result.error("NO_CONTEXT", "mapView is null", null);
+            return;
+        }
+
+        Double latitude = call.argument("latitude");
+        Double longitude = call.argument("longitude");
+        Integer radius = call.argument("radius");
+        String keyword = call.argument("keyword");
+        Integer page = call.argument("page");
+        Integer pageSize = call.argument("pageSize");
+
+        if (latitude == null || longitude == null) {
+            result.error("INVALID_PARAM", "latitude or longitude is null", null);
+            return;
+        }
+
+        if (radius == null) radius = 1000;
+        if (page == null) page = 1;
+        if (pageSize == null) pageSize = 20;
+        if (keyword == null) keyword = "";
+
+        // =========================
+        // 1️⃣ 构建查询条件
+        // =========================
+        PoiSearch.Query query = new PoiSearch.Query(
+                keyword,   // 关键字
+                "",        // POI 类型（空=全部）
+                ""         // 城市（空=全国）
+        );
+
+        query.setPageSize(pageSize);
+        query.setPageNum(page - 1); // ⚠️ Android 从 0 开始
+
+        // =========================
+        // 2️⃣ 周边搜索
+        // =========================
+        LatLonPoint center =
+                new LatLonPoint(latitude, longitude);
+
+        PoiSearch poiSearch =
+                new PoiSearch(mapView.getContext(), query);
+
+        poiSearch.setBound(
+                new PoiSearch.SearchBound(center, radius)
+        );
+
+        // =========================
+        // 3️⃣ 异步回调
+        // =========================
+        poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+            @Override
+            public void onPoiSearched(PoiResult poiResult, int errorCode) {
+
+                if (errorCode != 1000 || poiResult == null) {
+                    result.error(
+                            "SEARCH_FAILED",
+                            "Poi search failed, code=" + errorCode,
+                            null
+                    );
+                    return;
+                }
+
+                List<Map<String, Object>> pois = new ArrayList<>();
+
+                for (PoiItem poi : poiResult.getPois()) {
+
+                    Map<String, Object> map = new HashMap<>();
+
+                    map.put("id", poi.getPoiId());
+                    map.put("name", poi.getTitle());
+                    map.put("address", poi.getSnippet());
+
+                    if (poi.getLatLonPoint() != null) {
+                        map.put("latitude", poi.getLatLonPoint().getLatitude());
+                        map.put("longitude", poi.getLatLonPoint().getLongitude());
+                    }
+
+                    // ⭐ 距离（单位：米）
+                    map.put("distance", poi.getDistance());
+
+                    // ⭐ 类型
+                    map.put("type", poi.getTypeDes());
+
+                    pois.add(map);
+                }
+
+                result.success(pois);
+            }
+
+            @Override
+            public void onPoiItemSearched(PoiItem poiItem, int i) {
+                // 单 POI 搜索不用
+            }
+        });
+
+        poiSearch.searchPOIAsyn();
+    }
+
+
+
+
 
     // 获取相机定位
     private void handleGetCameraPosition(MethodChannel.Result result) {

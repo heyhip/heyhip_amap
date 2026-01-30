@@ -11,6 +11,7 @@ import 'package:heyhip_amap/heyhip_amap.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/heyhip_marker_popup.dart';
+import 'package:heyhip_amap/heyhip_poi.dart';
 import 'package:heyhip_amap/map_type.dart';
 import 'package:heyhip_amap/marker_icon.dart';
 import 'package:heyhip_amap_example/HomeController.dart';
@@ -227,7 +228,7 @@ final List<HeyhipMarker> markers = [
   @override
   Widget build(BuildContext context) {
 
-    Get.put(Homecontroller());
+    Get.put(Homecontroller);
     return GetMaterialApp(
       home: Scaffold(
         appBar: AppBar(
@@ -251,7 +252,7 @@ final List<HeyhipMarker> markers = [
         //  latitude: 30.482251,
         // longitude: 104.080003,
         // zoom: 14,
-        enableMarkerPopup: false,
+        enableMarkerPopup: true,
         enableCameraMoving: false,
         uiSettings: AMapUiSettings(
           // scaleControlsEnabled: true
@@ -379,6 +380,27 @@ debugPrint(
               },
               child: const Text('更新get'),
             ),
+
+
+            const SizedBox(height: 20),
+            InkWell(
+              onTap: () async {
+                //  Homecontroller.to.updateIddd();
+                // mapController.moveCamera(CameraPosition(target: LatLng(30.482251, 104.080003), zoom: 14));
+
+                List<HeyhipPoi> resutl = await mapController.searchPoisByLatLng(LatLng(30.482251, 104.080003));
+                print("================");
+                print(resutl.length);
+                debugPrint(resutl.toString());
+                resutl.forEach((item) {
+                  debugPrint(item.name + " --- " + item.address  + " --- " + item.position.longitude.toString()  + " --- " + item.distance.toString());
+                });
+              },
+              child: const Text('获取附近Poi'),
+            ),
+
+
+
           ],
         ),
       ),

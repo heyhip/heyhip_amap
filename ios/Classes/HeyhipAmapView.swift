@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 import MAMapKit
 import SDWebImage
-
+import AMapSearchKit
 
 
 
@@ -236,7 +236,11 @@ func clusterGridSize(for zoom: CGFloat) -> Int {
 
 
 
-public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
+public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, AMapSearchDelegate {
+
+    private let searchAPI: AMapSearchAPI
+    // 保存 FlutterResult（异步回调用）
+    private var pendingPoiResult: FlutterResult?
 
     
     private let mapView: MAMapView
@@ -290,7 +294,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
       mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
       
 
+      self.searchAPI = AMapSearchAPI()
       super.init()
+      self.searchAPI.delegate = self
 
       mapView.delegate = self
       
@@ -372,6 +378,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
             self.handleSetZoom(call: call, result: result)
         case "getCameraPosition":
             self.handleGetCameraPosition(result: result);
+            break;
+        case "searchPoisByLatLng":
+            self.handleSearchPoisByLatLng(call: call, result: result)
             break;
         case "setMapType":
             if let type = call.arguments as? Int {
@@ -871,6 +880,103 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate {
             "bearing": mapView.rotationDegree
         ])
     }
+
+    
+    
+    private func handleSearchPoisByLatLng(
+        call: FlutterMethodCall,
+        result: @escaping FlutterResult
+    ) {
+        guard let args = call.arguments as? [String: Any],
+              let lat = args["latitude"] as? Double,
+              let lng = args["longitude"] as? Double
+        else {
+            result(FlutterError(
+                code: "INVALID_ARGS",
+                message: "latitude / longitude missing",
+                details: nil
+            ))
+            return
+        }
+
+        let radius = args["radius"] as? Int ?? 1000
+        let keyword = args["keyword"] as? String
+        let page = args["page"] as? Int ?? 1
+        let pageSize = args["pageSize"] as? Int ?? 20
+
+        pendingPoiResult = result
+
+        let request = AMapPOIAroundSearchRequest()
+        request.location = AMapGeoPoint.location(
+            withLatitude: CGFloat(lat),
+            longitude: CGFloat(lng)
+        )
+        request.radius = radius
+        request.sortrule = 0      // 距离优先
+        request.offset = 20
+        request.page = page
+        request.offset = pageSize
+
+        if let keyword = keyword, !keyword.isEmpty {
+            request.keywords = keyword
+        }
+
+        searchAPI.aMapPOIAroundSearch(request)
+    }
+
+
+    public func onPOISearchDone(
+        _ request: AMapPOISearchBaseRequest!,
+        response: AMapPOISearchResponse!
+    ) {
+        guard let result = pendingPoiResult else { return }
+        pendingPoiResult = nil
+
+        guard let pois = response.pois else {
+            result([])
+            return
+        }
+
+        // 3️⃣ POI → Map
+        let list: [[String: Any]] = pois.map { poi in
+            return [
+                "id": poi.uid ?? "",
+                "name": poi.name ?? "",
+                "latitude": poi.location.latitude,
+                "longitude": poi.location.longitude,
+                "address": poi.address ?? "",
+                "type": poi.type ?? "",
+                "distance": poi.distance > 0 ? poi.distance : 0
+            ]
+        }
+
+        // 4️⃣ 回传 Flutter
+        result(list)
+    }
+    
+    public func aMapSearchRequest(
+        _ request: Any!,
+        didFailWithError error: Error!
+    ) {
+        if let result = pendingPoiResult {
+            pendingPoiResult = nil
+            result(FlutterError(
+                code: "POI_SEARCH_FAILED",
+                message: error.localizedDescription,
+                details: nil
+            ))
+        }
+    }
+
+
+   
+    
+    
+    
+    
+    
+    
+
 
     
 

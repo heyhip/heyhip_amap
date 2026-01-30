@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
+import 'package:heyhip_amap/heyhip_poi.dart';
 
 typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
@@ -288,41 +289,33 @@ class HeyhipAmapController {
   }
 
 
+  /// 根据经纬度获取周边Poi
+  Future<List<HeyhipPoi>> searchPoisByLatLng(
+    LatLng latlng, {
+      int radius = 1000, 
+      String keyword = '',
+      int page = 1,
+      int pageSize = 20,
+      }) async {
+    final result = await _channel!.invokeMethod<List<dynamic>>(
+      'searchPoisByLatLng',
+      {
+        'latitude': latlng.latitude,
+        'longitude': latlng.longitude,
+        'radius': radius,
+        'keyword': keyword, // 可选
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
 
-  // // 弹窗
-  // void _handleMarkerPopupToggle(dynamic args) {
-  //   if (_onMarkerPopupToggle == null || args is! Map) return;
+    if (result == null) return [];
 
-  //   final markerId = args['markerId'] as String?;
-  //   final action = args['action'] as String?;
+    return result
+      .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
+      .toList();
+  }
 
-  //   if (markerId == null || action == null) return;
-
-  //   final isOpen = action == 'open';
-
-  //   final latitude = (args['latitude'] as num?)?.toDouble();
-  //   final longitude = (args['longitude'] as num?)?.toDouble();
-
-  //   _onMarkerPopupToggle!(
-  //     markerId,
-  //     isOpen,
-  //     latitude,
-  //     longitude,
-  //   );
-  // }
-
-  
-  // Future<void> setClusterOptions({
-  //   required bool enable,
-  //   ClusterStyle? style,
-  // }) async {
-  //   if (_channel == null) return;
-
-  //   await _channel!.invokeMethod('setClusterOptions', {
-  //     'enable': enable,
-  //     'style': style?.toMap(),
-  //   });
-  // }
 
 
 
