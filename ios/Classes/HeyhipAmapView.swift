@@ -382,6 +382,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         case "searchPoisByLatLng":
             self.handleSearchPoisByLatLng(call: call, result: result)
             break;
+        case "searchPoisByText":
+            self.handleSearchPoisByText(call: call, result: result)
+            break;
         case "setMapType":
             if let type = call.arguments as? Int {
                 self.applyMapType(type)
@@ -923,6 +926,56 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         searchAPI.aMapPOIAroundSearch(request)
     }
+    
+    
+    
+    private func handleSearchPoisByText(
+        call: FlutterMethodCall,
+        result: @escaping FlutterResult
+    ) {
+        guard
+            let args = call.arguments as? [String: Any],
+            let keyword = args["keyword"] as? String
+        else {
+            result(FlutterError(
+                code: "INVALID_ARGS",
+                message: "keyword is required",
+                details: nil
+            ))
+            return
+        }
+
+        let request = AMapPOIKeywordsSearchRequest()
+        request.keywords = keyword
+
+        // 可选：城市
+        if let city = args["city"] as? String, !city.isEmpty {
+            request.city = city
+        }
+
+        // 可选：是否限制在城市内
+        request.cityLimit = args["cityLimit"] as? Bool ?? false
+
+        // 分页
+        request.page = args["page"] as? Int ?? 1
+        request.offset = args["pageSize"] as? Int ?? 20
+
+        // 👇 可选：中心点（只影响排序，不是周边搜索）
+        if
+            let lat = args["latitude"] as? Double,
+            let lng = args["longitude"] as? Double
+        {
+            request.location = AMapGeoPoint.location(
+                withLatitude: CGFloat(lat),
+                longitude: CGFloat(lng)
+            )
+        }
+
+        self.pendingPoiResult = result
+        self.searchAPI.aMapPOIKeywordsSearch(request)
+    }
+
+    
 
 
     public func onPOISearchDone(
@@ -939,6 +992,12 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         // 3️⃣ POI → Map
         let list: [[String: Any]] = pois.map { poi in
+            
+            // ⭐ 关键：distance 用 Optional
+            let distance: Double? = poi.distance > 0
+                ? Double(poi.distance)
+                : nil
+            
             return [
                 "id": poi.uid ?? "",
                 "name": poi.name ?? "",
@@ -946,7 +1005,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 "longitude": poi.location.longitude,
                 "address": poi.address ?? "",
                 "type": poi.type ?? "",
-                "distance": poi.distance > 0 ? poi.distance : 0
+                "distance": distance as Any
             ]
         }
 

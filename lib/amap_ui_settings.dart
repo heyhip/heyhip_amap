@@ -1,12 +1,12 @@
 class AMapUiSettings {
-  final bool zoomControlsEnabled;      // 加减号
-  final bool compassEnabled;           // 指南针
-  final bool scaleControlsEnabled;     // 比例尺
-  final bool myLocationButtonEnabled;  // 定位按钮
+  final bool zoomControlsEnabled; // 加减号
+  final bool compassEnabled; // 指南针
+  final bool scaleControlsEnabled; // 比例尺
+  final bool myLocationButtonEnabled; // 定位按钮
 
-  final bool rotateGesturesEnabled;    // 旋转手势
-  final bool tiltGesturesEnabled;      // 倾斜手势
-  final bool zoomGesturesEnabled;      // 缩放手势
+  final bool rotateGesturesEnabled; // 旋转手势
+  final bool tiltGesturesEnabled; // 倾斜手势
+  final bool zoomGesturesEnabled; // 缩放手势
 
   const AMapUiSettings({
     this.zoomControlsEnabled = false, // ⭐ 默认关闭加减号

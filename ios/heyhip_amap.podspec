@@ -5,7 +5,7 @@
 Pod::Spec.new do |s|
   s.name             = 'heyhip_amap'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter project.'
+  s.summary          = 'A Flutter plugin for AMap (Gaode) on Android and iOS.'
   s.description      = <<-DESC
 A new Flutter project.
                        DESC

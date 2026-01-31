@@ -9,19 +9,14 @@ typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
 typedef CameraMoveCallback = void Function(CameraPosition position);
 typedef CameraIdleCallback = void Function(CameraPosition position);
-typedef MarkerClickCallback = void Function(
-  String markerId,
-  LatLng position,
-);
-typedef MarkerPopupToggleCallback = void Function(
-  String markerId,
-  bool isOpen,
-  double? latitude,
-  double? longitude,
-);
-
-
-
+typedef MarkerClickCallback = void Function(String markerId, LatLng position);
+typedef MarkerPopupToggleCallback =
+    void Function(
+      String markerId,
+      bool isOpen,
+      double? latitude,
+      double? longitude,
+    );
 
 // 地图控制器
 class HeyhipAmapController {
@@ -34,11 +29,10 @@ class HeyhipAmapController {
   double? _initialLongitude;
   double? _initialZoom;
 
-
   bool _mapReady = false;
+
   /// ⭐ 缓存的操作队列
   final List<Future<void> Function()> _pendingActions = [];
-
 
   // 地图点击
   MapClickCallback? _onMapClick;
@@ -53,7 +47,6 @@ class HeyhipAmapController {
   // Marker点击弹窗
   MarkerPopupToggleCallback? _onMarkerPopupToggle;
 
-
   // 初始化相机
   void initialCamera({
     required double latitude,
@@ -65,7 +58,6 @@ class HeyhipAmapController {
     _initialZoom = zoom;
   }
 
-  
   // 绑定视图
   void attach(int viewId) {
     if (_attached) return;
@@ -85,10 +77,7 @@ class HeyhipAmapController {
           final lat = map['latitude'] as double;
           final lng = map['longitude'] as double;
 
-          _onMarkerClick?.call(
-            markerId,
-            LatLng(lat, lng),
-          );
+          _onMarkerClick?.call(markerId, LatLng(lat, lng));
           break;
 
         case 'onMapClick':
@@ -108,7 +97,7 @@ class HeyhipAmapController {
           final map = Map<String, dynamic>.from(call.arguments);
           _onCameraMove?.call(CameraPosition.fromMap(map));
           break;
-        
+
         case 'onCameraMoveStart':
           final map = Map<String, dynamic>.from(call.arguments);
           _onCameraMoveStart?.call(CameraPosition.fromMap(map));
@@ -126,12 +115,7 @@ class HeyhipAmapController {
               final latitude = (map['latitude'] as num?)?.toDouble();
               final longitude = (map['longitude'] as num?)?.toDouble();
 
-              _onMarkerPopupToggle?.call(
-                markerId,
-                isOpen,
-                latitude,
-                longitude,
-              );
+              _onMarkerPopupToggle?.call(markerId, isOpen, latitude, longitude);
             }
           }
           break;
@@ -152,8 +136,12 @@ class HeyhipAmapController {
 
     // ✅ 先应用初始相机（如果有）
     if (_initialLatitude != null && _initialLongitude != null) {
-
-      moveCamera(CameraPosition(target: LatLng(_initialLatitude!, _initialLongitude!), zoom: _initialZoom ?? 14));
+      moveCamera(
+        CameraPosition(
+          target: LatLng(_initialLatitude!, _initialLongitude!),
+          zoom: _initialZoom ?? 14,
+        ),
+      );
 
       // 只执行一次
       _initialLatitude = null;
@@ -170,7 +158,6 @@ class HeyhipAmapController {
     }
     _pendingActions.clear();
   }
-
 
   // 注册高德地图完成
   void onMapLoadFinish(VoidCallback callback) {
@@ -207,7 +194,6 @@ class HeyhipAmapController {
     _onMarkerPopupToggle = callback;
   }
 
-
   // 移动地图
   Future<void> moveCamera(CameraPosition position) async {
     if (!_attached || _channel == null) {
@@ -227,16 +213,13 @@ class HeyhipAmapController {
     }
   }
 
-
   /// 仅修改缩放级别
   Future<void> setZoom(double zoom) async {
     if (!_attached || _channel == null) {
       throw StateError('AMapController is not attached to a map');
     }
 
-    await _channel!.invokeMethod('setZoom', {
-      'zoom': zoom,
-    });
+    await _channel!.invokeMethod('setZoom', {'zoom': zoom});
   }
 
   /// 获取当前相机位置
@@ -256,12 +239,9 @@ class HeyhipAmapController {
     }
 
     Future<void> action() {
-      return _channel!.invokeMethod(
-        'setMarkers',
-        {
-          'markers': markers.map((e) => e.toMap()).toList(),
-        },
-      );
+      return _channel!.invokeMethod('setMarkers', {
+        'markers': markers.map((e) => e.toMap()).toList(),
+      });
     }
 
     if (_mapReady) {
@@ -288,15 +268,14 @@ class HeyhipAmapController {
     }
   }
 
-
   /// 根据经纬度获取周边Poi
   Future<List<HeyhipPoi>> searchPoisByLatLng(
     LatLng latlng, {
-      int radius = 1000, 
-      String keyword = '',
-      int page = 1,
-      int pageSize = 20,
-      }) async {
+    int radius = 1000,
+    String keyword = '',
+    int page = 1,
+    int pageSize = 20,
+  }) async {
     final result = await _channel!.invokeMethod<List<dynamic>>(
       'searchPoisByLatLng',
       {
@@ -312,11 +291,32 @@ class HeyhipAmapController {
     if (result == null) return [];
 
     return result
-      .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
-      .toList();
+        .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
+  Future<List<HeyhipPoi>> searchPoisByText(
+    String keyword, {
+    String? city,
+    bool cityLimit = false,
+    LatLng? location,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final result = await _channel!.invokeMethod<List>('searchPoisByText', {
+      'keyword': keyword,
+      'city': city,
+      'cityLimit': cityLimit,
+      'latitude': location?.latitude,
+      'longitude': location?.longitude,
+      'page': page,
+      'pageSize': pageSize,
+    });
 
+    if (result == null) return [];
 
-
+    return result
+        .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
 }

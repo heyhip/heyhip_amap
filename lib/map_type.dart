@@ -1,11 +1,10 @@
 enum MapType {
-  normal,     // 普通
-  satellite,  // 卫星
-  night,      // 夜间
-  navi,       // 导航
-  bus,        // 公交
+  normal, // 普通
+  satellite, // 卫星
+  night, // 夜间
+  navi, // 导航
+  bus, // 公交
 }
-
 
 extension MapTypeExt on MapType {
   int get value {
@@ -23,4 +22,3 @@ extension MapTypeExt on MapType {
     }
   }
 }
-

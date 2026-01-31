@@ -3,39 +3,37 @@ import 'dart:io';
 import 'heyhip_amap_platform_interface.dart';
 export 'heyhip_amap_view.dart';
 
-
 class HeyhipAmap {
-
   HeyhipAmap._(); // 🔒 禁止实例化
 
-   static bool _inited = false;
+  static bool _inited = false;
 
-    /// 初始化 Key（只调用一次）
-    static Future<void> initKey({
-      required String androidKey,
-      required String iosKey,
-    }) async {
-      if (_inited) return;
+  /// 初始化 Key（只调用一次）
+  static Future<void> initKey({
+    required String androidKey,
+    required String iosKey,
+  }) async {
+    if (_inited) return;
 
-      final apiKey = Platform.isAndroid ? androidKey : iosKey;
+    final apiKey = Platform.isAndroid ? androidKey : iosKey;
 
-      await HeyhipAmapPlatform.instance.initKey(apiKey: apiKey);
+    await HeyhipAmapPlatform.instance.initKey(apiKey: apiKey);
 
-      _inited = true;
-    }
+    _inited = true;
+  }
 
-    /// 隐私合规（可多次调用）
-    static Future<void> updatePrivacy({
-      required bool hasContains,
-      required bool hasShow,
-      required bool hasAgree,
-    }) {
-      return HeyhipAmapPlatform.instance.updatePrivacy(
-        hasContains: hasContains,
-        hasShow: hasShow,
-        hasAgree: hasAgree,
-      );
-    }
+  /// 隐私合规（可多次调用）
+  static Future<void> updatePrivacy({
+    required bool hasContains,
+    required bool hasShow,
+    required bool hasAgree,
+  }) {
+    return HeyhipAmapPlatform.instance.updatePrivacy(
+      hasContains: hasContains,
+      hasShow: hasShow,
+      hasAgree: hasAgree,
+    );
+  }
 
   static Future<String?> getPlatformVersion() {
     return HeyhipAmapPlatform.instance.getPlatformVersion();
@@ -55,5 +53,4 @@ class HeyhipAmap {
   static Future<Map<String, dynamic>?> getCurrentLocation() {
     return HeyhipAmapPlatform.instance.getCurrentLocation();
   }
-
 }

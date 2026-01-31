@@ -11,16 +11,16 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
 
   @override
   Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
+    final version = await methodChannel.invokeMethod<String>(
+      'getPlatformVersion',
+    );
     return version;
   }
 
   @override
   Future<void> initKey({required String apiKey}) async {
     try {
-      await methodChannel.invokeMethod('initKey', {
-        'apiKey': apiKey,
-      });
+      await methodChannel.invokeMethod('initKey', {'apiKey': apiKey});
     } on PlatformException catch (e) {
       print(e.code);
       print(e.message);
@@ -60,6 +60,4 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
     final result = await methodChannel.invokeMethod('getCurrentLocation');
     return Map<String, dynamic>.from(result);
   }
-
-
 }

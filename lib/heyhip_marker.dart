@@ -29,7 +29,6 @@ class HeyhipMarker {
       'longitude': longitude,
     };
 
-
     if (icon != null) map.addAll(icon!.toMap());
     if (popup != null) map['popup'] = popup!.toMap();
 

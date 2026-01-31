@@ -464,6 +464,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             case "searchPoisByLatLng":
                 handleSearchPoisByLatLng(call, result);
                 break;
+            case "searchPoisByText":
+                handleSearchPoisByText(call, result);
+                break;
             case "setMapType":
                 Integer type = call.arguments instanceof Integer ? (Integer) call.arguments : null;
                 if (type != null && aMap != null) {
@@ -1412,7 +1415,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     }
 
                     // ⭐ 距离（单位：米）
-                    map.put("distance", poi.getDistance());
+                    map.put("distance", poi.getDistance() > 0 ? poi.getDistance() : null);
 
                     // ⭐ 类型
                     map.put("type", poi.getTypeDes());
@@ -1433,6 +1436,107 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     }
 
 
+    private void handleSearchPoisByText(
+        MethodCall call,
+        MethodChannel.Result result
+    ) {
+        if (mapView == null) {
+            result.error("NO_CONTEXT", "mapView is null", null);
+            return;
+        }
+
+        String keyword = call.argument("keyword");
+        String city = call.argument("city");
+        Boolean cityLimit = call.argument("cityLimit");
+        Integer page = call.argument("page");
+        Integer pageSize = call.argument("pageSize");
+
+        Double latitude = call.argument("latitude");   // 可选
+        Double longitude = call.argument("longitude"); // 可选
+
+        if (TextUtils.isEmpty(keyword)) {
+            result.error("INVALID_PARAM", "keyword is empty", null);
+            return;
+        }
+
+        if (page == null) page = 1;
+        if (pageSize == null) pageSize = 20;
+        if (cityLimit == null) cityLimit = false;
+
+        // =========================
+        // 1️⃣ 构建 Query（核心）
+        // =========================
+        PoiSearch.Query query = new PoiSearch.Query(
+                keyword,   // 关键字
+                "",        // POI 类型（空=全部）
+                city       // 城市（可空）
+        );
+
+        query.setPageSize(pageSize);
+        query.setPageNum(page - 1); // ⚠️ Android 从 0 开始
+        query.setCityLimit(cityLimit);
+
+        // =========================
+        // 2️⃣ 创建 PoiSearch（⚠️ 不要 setBound）
+        // =========================
+        PoiSearch poiSearch =
+                new PoiSearch(mapView.getContext(), query);
+
+        // ⭐ 可选：仅用于排序（不是周边）
+        if (latitude != null && longitude != null) {
+            poiSearch.setLocation(
+                    new LatLonPoint(latitude, longitude)
+            );
+        }
+
+        // =========================
+        // 3️⃣ 回调
+        // =========================
+        poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+            @Override
+            public void onPoiSearched(PoiResult poiResult, int errorCode) {
+
+                if (errorCode != 1000 || poiResult == null) {
+                    result.error(
+                            "SEARCH_FAILED",
+                            "Poi text search failed, code=" + errorCode,
+                            null
+                    );
+                    return;
+                }
+
+                List<Map<String, Object>> pois = new ArrayList<>();
+
+                for (PoiItem poi : poiResult.getPois()) {
+
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", poi.getPoiId());
+                    map.put("name", poi.getTitle());
+                    map.put("address", poi.getSnippet());
+                    map.put("type", poi.getTypeDes());
+
+                    if (poi.getLatLonPoint() != null) {
+                        map.put("latitude", poi.getLatLonPoint().getLatitude());
+                        map.put("longitude", poi.getLatLonPoint().getLongitude());
+                    }
+
+                    // ⚠️ Text Search 下 distance 可能为 0
+                    map.put("distance", poi.getDistance() > 0 ? poi.getDistance() : null);
+
+                    pois.add(map);
+                }
+
+                result.success(pois);
+            }
+
+            @Override
+            public void onPoiItemSearched(PoiItem poiItem, int i) {
+                // 不用
+            }
+        });
+
+        poiSearch.searchPOIAsyn();
+    }
 
 
 

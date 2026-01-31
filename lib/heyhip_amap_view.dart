@@ -18,13 +18,14 @@ class HeyhipAmapView extends StatelessWidget {
   final bool clusterEnabled;
   // 聚合样式
   final ClusterStyle? clusterStyle;
+
   /// 是否启用 marker 点击弹窗
   final bool enableMarkerPopup;
+
   /// 是否开启持续移动
   final bool enableCameraMoving;
 
-
-   /// ✅ 外部传入的 Controller
+  /// ✅ 外部传入的 Controller
   final HeyhipAmapController controller;
 
   /// ✅ 新增：地图创建完成回调
@@ -32,8 +33,6 @@ class HeyhipAmapView extends StatelessWidget {
 
   /// ⭐ UI 设置
   final AMapUiSettings uiSettings;
-
-  
 
   const HeyhipAmapView({
     super.key,
@@ -52,19 +51,18 @@ class HeyhipAmapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     String viewType = 'heyhip_amap_map';
     final creationParams = {
-        'latitude': latitude,
-        'longitude': longitude,
-        'zoom': zoom,
-        'uiSettings': uiSettings.toMap(),
-        'mapType': mapType.value,
-        'clusterEnabled': clusterEnabled,
-        'clusterStyle': clusterStyle?.toMap(),
-        'enableMarkerPopup': enableMarkerPopup,
-        'enableCameraMoving': enableCameraMoving,
-      };
+      'latitude': latitude,
+      'longitude': longitude,
+      'zoom': zoom,
+      'uiSettings': uiSettings.toMap(),
+      'mapType': mapType.value,
+      'clusterEnabled': clusterEnabled,
+      'clusterStyle': clusterStyle?.toMap(),
+      'enableMarkerPopup': enableMarkerPopup,
+      'enableCameraMoving': enableCameraMoving,
+    };
 
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return UiKitView(
@@ -77,7 +75,7 @@ class HeyhipAmapView extends StatelessWidget {
         //       () => EagerGestureRecognizer(),
         //     ),
         //   },
-        );
+      );
     }
 
     return AndroidView(
@@ -102,6 +100,4 @@ class HeyhipAmapView extends StatelessWidget {
 
     onMapCreated?.call();
   }
-
 }
-

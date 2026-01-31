@@ -8,7 +8,7 @@ class HeyhipPoi {
   final LatLng position;
   final String address;
   final String type;
-  final double distance;
+  final double? distance;
 
   HeyhipPoi({
     required this.id,
@@ -16,7 +16,7 @@ class HeyhipPoi {
     required this.position,
     required this.address,
     required this.type,
-    required this.distance,
+    this.distance,
   });
 
   factory HeyhipPoi.fromMap(Map<String, dynamic> map) {
@@ -29,7 +29,7 @@ class HeyhipPoi {
       ),
       address: map['address'] as String? ?? '',
       type: map['type'] as String? ?? '',
-      distance: (map['distance'] as num).toDouble(),
+      distance: (map['distance'] as num?)?.toDouble(),
     );
   }
 }

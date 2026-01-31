@@ -1,9 +1,7 @@
 import 'package:get/get.dart';
 
 class Homecontroller extends GetxController {
-
   static Homecontroller to = Get.find();
-
 
   String iddd = "idddd";
 
@@ -11,6 +9,4 @@ class Homecontroller extends GetxController {
     print("__________+++++++============");
     update([iddd]);
   }
-
-
 }

@@ -47,5 +47,4 @@ abstract class HeyhipAmapPlatform extends PlatformInterface {
 
   // 获取当前定位
   Future<Map<String, dynamic>?> getCurrentLocation();
-
 }

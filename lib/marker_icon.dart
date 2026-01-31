@@ -19,12 +19,7 @@ class MarkerIcon {
     double width = 120,
     double height = 120,
   }) {
-    return MarkerIcon._(
-      'asset',
-      assetPath,
-      width: width,
-      height: height,
-    );
+    return MarkerIcon._('asset', assetPath, width: width, height: height);
   }
 
   /// 网络图标
@@ -33,12 +28,7 @@ class MarkerIcon {
     double width = 120,
     double height = 120,
   }) {
-    return MarkerIcon._(
-      'network',
-      url,
-      width: width,
-      height: height,
-    );
+    return MarkerIcon._('network', url, width: width, height: height);
   }
 
   /// base64 图标
@@ -47,12 +37,7 @@ class MarkerIcon {
     double width = 120,
     double height = 120,
   }) {
-    return MarkerIcon._(
-      'base64',
-      base64,
-      width: width,
-      height: height,
-    );
+    return MarkerIcon._('base64', base64, width: width, height: height);
   }
 
   /// ⚠️ bitmap（不建议 Flutter → 原生）
@@ -61,21 +46,13 @@ class MarkerIcon {
     double width = 120,
     double height = 120,
   }) {
-    return MarkerIcon._(
-      'bitmap',
-      bytes,
-      width: width,
-      height: height,
-    );
+    return MarkerIcon._('bitmap', bytes, width: width, height: height);
   }
 
   /// ⭐ 给 Platform Channel 用
   Map<String, dynamic> toMap() {
     return {
-      'icon': {
-        'type': type,
-        'value': value,
-      },
+      'icon': {'type': type, 'value': value},
       'iconWidth': width,
       'iconHeight': height,
     };
