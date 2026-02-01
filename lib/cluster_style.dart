@@ -15,10 +15,10 @@ class ClusterStyle {
 
   Map<String, dynamic> toMap() {
     return {
-      'bgColor': bgColor.value,
-      'textColor': textColor.value,
+      'bgColor': bgColor.toARGB32(),
+      'textColor': textColor.toARGB32(),
       'showStroke': showStroke,
-      'strokeColor': strokeColor.value,
+      'strokeColor': strokeColor.toARGB32(),
     };
   }
 }
