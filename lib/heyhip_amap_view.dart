@@ -1,12 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/amap_ui_settings.dart';
 import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
-import 'package:heyhip_amap/heyhip_marker.dart';
-import 'package:heyhip_amap/heyhip_marker_popup.dart';
 import 'package:heyhip_amap/map_type.dart';
 
 class HeyhipAmapView extends StatelessWidget {

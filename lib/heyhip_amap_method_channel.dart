@@ -21,7 +21,7 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
   Future<void> initKey({required String apiKey}) async {
     try {
       await methodChannel.invokeMethod('initKey', {'apiKey': apiKey});
-    } on PlatformException catch (e) {
+    } on PlatformException catch (_) {
       // print(e.code);
       // print(e.message);
     }
@@ -39,7 +39,7 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
         'hasShow': hasShow,
         'hasAgree': hasAgree,
       });
-    } on PlatformException catch (e) {
+    } on PlatformException catch (_) {
       // print(e.code);
       // print(e.message);
     }

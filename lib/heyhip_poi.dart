@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'camera_position.dart';
 
 class HeyhipPoi {

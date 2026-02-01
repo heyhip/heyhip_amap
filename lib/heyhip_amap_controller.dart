@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heyhip_amap/camera_position.dart';
-import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/heyhip_poi.dart';
 
