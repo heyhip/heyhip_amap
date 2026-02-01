@@ -234,6 +234,27 @@ func clusterGridSize(for zoom: CGFloat) -> Int {
 
 
 
+private var kAssociatedImageURLKey: UInt8 = 0
+
+extension MAAnnotationView {
+    var heyhipImageURL: URL? {
+        get {
+            objc_getAssociatedObject(self, &kAssociatedImageURLKey) as? URL
+        }
+        set {
+            objc_setAssociatedObject(
+                self,
+                &kAssociatedImageURLKey,
+                newValue,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
+        }
+    }
+}
+
+
+
+
 
 
 public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, AMapSearchDelegate {
@@ -279,6 +300,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     // ======================
     private var clusterEnabled: Bool = false
     private var clusterStyle: [String: Any]?
+    
+    
+    /// 上一次用于聚合的 zoom（向下取整）
+    private var lastClusterZoom: Int?
+
 
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger, registrar: FlutterPluginRegistrar) {
@@ -389,9 +415,17 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             if let type = call.arguments as? Int {
                 self.applyMapType(type)
             }
-            result(nil)
+            
+            
+            DispatchQueue.main.async {
+                result(nil)
+                }
         default:
-          result(FlutterMethodNotImplemented)
+            
+            DispatchQueue.main.async {
+                result(FlutterMethodNotImplemented)
+                }
+          
         }
       }
   }
@@ -423,9 +457,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
     // 地图加载完成
     public func mapViewDidFinishLoadingMap(_ mapView: MAMapView) {
+        guard mapView.window != nil else { return }
 
-
-      channel.invokeMethod("onMapLoaded", arguments: nil)
+        DispatchQueue.main.async {
+                self.channel.invokeMethod("onMapLoaded", arguments: nil)
+            }
     }
 
     
@@ -435,11 +471,15 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
       result: @escaping FlutterResult
     ) {
       guard let args = call.arguments as? [String: Any] else {
-        result(FlutterError(
-          code: "INVALID_ARGS",
-          message: "arguments missing",
-          details: nil
-        ))
+        
+          
+          DispatchQueue.main.async {
+              result(FlutterError(
+                code: "INVALID_ARGS",
+                message: "arguments missing",
+                details: nil
+              ))
+              }
         return
       }
 
@@ -448,11 +488,14 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         let lat = target["latitude"] as? Double,
         let lng = target["longitude"] as? Double
       else {
-        result(FlutterError(
-          code: "INVALID_ARGS",
-          message: "target missing",
-          details: nil
-        ))
+        
+          DispatchQueue.main.async {
+              result(FlutterError(
+                code: "INVALID_ARGS",
+                message: "target missing",
+                details: nil
+              ))
+              }
         return
       }
 
@@ -470,7 +513,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         mapView.zoomLevel = CGFloat(zoom)
       }
 
-      result(nil)
+      
+        
+        DispatchQueue.main.async {
+            result(nil)
+            }
     }
 
     
@@ -484,11 +531,14 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             let args = call.arguments as? [String: Any],
             let markers = args["markers"] as? [[String: Any]]
         else {
-            result(FlutterError(
-                code: "INVALID_ARGS",
-                message: "markers missing",
-                details: nil
-            ))
+            
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "INVALID_ARGS",
+                    message: "markers missing",
+                    details: nil
+                ))
+                }
             return
         }
 
@@ -529,7 +579,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         
         refreshClusters()
 
-        result(nil)
+        DispatchQueue.main.async {
+            result(nil)
+            }
+
     }
     
     
@@ -605,7 +658,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
       view?.annotation = ann
       view?.canShowCallout = false
-    view?.image = nil
+        
+        // ⭐ 彻底清理复用状态
+        view?.image = nil
+        view?.heyhipImageURL = nil
         
         
         
@@ -614,14 +670,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
           .filter { $0 is HeyhipInfoWindowView }
           .forEach { $0.removeFromSuperview() }
         
-        view?.canShowCallout = false
-        view?.subviews.forEach { sub in
-          if sub is HeyhipInfoWindowView {
-            sub.removeFromSuperview()
-          }
-        }
-
-
 
       // ⭐ 处理 icon
       if let iconInfo = ann.iconInfo,
@@ -638,20 +686,30 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 view?.image = assetPath.flatMap { UIImage(contentsOfFile: $0) }
 
               }
-
+            
         case "network":
-          if let urlStr = iconInfo["value"] as? String,
-             let url = URL(string: urlStr) {
-            // ⚠️ 建议后面用 SDWebImage
-            DispatchQueue.global().async {
-              if let data = try? Data(contentsOf: url),
-                 let image = UIImage(data: data) {
-                DispatchQueue.main.async {
-                  view?.image = image
+            if let urlStr = iconInfo["value"] as? String,
+               let url = URL(string: urlStr) {
+
+                // ⭐ 先清图（防止复用残影）
+                view?.image = nil
+
+                // ⭐ 记录当前 view 绑定的 url
+                view?.heyhipImageURL = url
+
+                SDWebImageManager.shared.loadImage(
+                    with: url,
+                    options: [.retryFailed, .scaleDownLargeImages],
+                    progress: nil
+                ) { [weak view] image, _, _, _, _, _ in
+                    DispatchQueue.main.async {
+                        // ⭐ 防止复用错位
+                        guard view?.heyhipImageURL == url else { return }
+                        view?.image = image
+                    }
                 }
-              }
             }
-          }
+
 
         case "base64":
           if let base64 = iconInfo["value"] as? String,
@@ -754,7 +812,13 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             return
         }
 
+        // 只在 zoom 变化时才刷新
         let zoomLevel = Int(mapView.zoomLevel)
+        if lastClusterZoom == zoomLevel {
+            return
+        }
+        lastClusterZoom = zoomLevel
+        
         let gridSize = clusterGridSize(for: mapView.zoomLevel)
         
 
@@ -779,7 +843,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         for cluster in clusters {
             if cluster.items.count == 1 {
-                // ===== 单点：用你原来的 HeyhipPointAnnotation =====
+                // ===== 单点：原来的 HeyhipPointAnnotation =====
                 let item = cluster.items[0]
                 if let ann = annotations[item.id] {
                     newAnnotations.append(ann)
@@ -811,13 +875,19 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         refreshClusters()
     }
+    
 
     
     public func mapView(
         _ mapView: MAMapView,
         regionDidChangeAnimated animated: Bool
     ) {
-        refreshClusters()
+        let currentZoom = Int(mapView.zoomLevel)
+
+        // ⭐ 只在 zoom 真正变化时才刷新聚合
+        if lastClusterZoom != currentZoom {
+            refreshClusters()
+        }
     }
 
 
@@ -831,18 +901,24 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             let args = call.arguments as? [String: Any],
             let zoom = args["zoom"] as? Double
         else {
-            result(FlutterError(
-                code: "INVALID_ARGS",
-                message: "zoom missing",
-                details: nil
-            ))
+            
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "INVALID_ARGS",
+                    message: "zoom missing",
+                    details: nil
+                ))
+                }
             return
         }
 
         // ⚠️ iOS 高德 zoomLevel 是 CGFloat
         mapView.zoomLevel = CGFloat(zoom)
 
-        result(nil)
+        
+        DispatchQueue.main.async {
+            result(nil)
+            }
     }
 
     // 获取相机定位
@@ -851,13 +927,16 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     ) {
         let center = mapView.centerCoordinate
 
-        result([
-            "latitude": center.latitude,
-            "longitude": center.longitude,
-            "zoom": mapView.zoomLevel,
-            "tilt": 0,
-            "bearing": mapView.rotationDegree
-        ])
+        
+        DispatchQueue.main.async {
+            result([
+                "latitude": center.latitude,
+                "longitude": center.longitude,
+                "zoom": self.mapView.zoomLevel,
+                "tilt": 0,
+                "bearing": self.mapView.rotationDegree
+            ])
+            }
     }
 
     
@@ -866,15 +945,30 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         call: FlutterMethodCall,
         result: @escaping FlutterResult
     ) {
+        // ⭐ 新增：防止并发覆盖
+        guard pendingPoiResult == nil else {
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "POI_SEARCH_BUSY",
+                    message: "POI search already in progress",
+                    details: nil
+                ))
+            }
+            return
+        }
+        
         guard let args = call.arguments as? [String: Any],
               let lat = args["latitude"] as? Double,
               let lng = args["longitude"] as? Double
         else {
-            result(FlutterError(
-                code: "INVALID_ARGS",
-                message: "latitude / longitude missing",
-                details: nil
-            ))
+            
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "INVALID_ARGS",
+                    message: "latitude / longitude missing",
+                    details: nil
+                ))
+                }
             return
         }
 
@@ -909,15 +1003,31 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         call: FlutterMethodCall,
         result: @escaping FlutterResult
     ) {
+        
+        // ⭐ 新增：防止并发覆盖
+        guard pendingPoiResult == nil else {
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "POI_SEARCH_BUSY",
+                    message: "POI search already in progress",
+                    details: nil
+                ))
+            }
+            return
+        }
+        
         guard
             let args = call.arguments as? [String: Any],
             let keyword = args["keyword"] as? String
         else {
-            result(FlutterError(
-                code: "INVALID_ARGS",
-                message: "keyword is required",
-                details: nil
-            ))
+            
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "INVALID_ARGS",
+                    message: "keyword is required",
+                    details: nil
+                ))
+                }
             return
         }
 
@@ -962,7 +1072,10 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         pendingPoiResult = nil
 
         guard let pois = response.pois else {
-            result([])
+            
+            DispatchQueue.main.async {
+                result([])
+                }
             return
         }
 
@@ -988,7 +1101,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         }
 
         // 4️⃣ 回传 Flutter
-        result(list)
+        DispatchQueue.main.async {
+            result(list)
+        }
     }
     
     public func aMapSearchRequest(
@@ -997,11 +1112,13 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     ) {
         if let result = pendingPoiResult {
             pendingPoiResult = nil
-            result(FlutterError(
-                code: "POI_SEARCH_FAILED",
-                message: error.localizedDescription,
-                details: nil
-            ))
+            DispatchQueue.main.async {
+                result(FlutterError(
+                    code: "POI_SEARCH_FAILED",
+                    message: error.localizedDescription,
+                    details: nil
+                ))
+            }
         }
     }
 
@@ -1070,7 +1187,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             "longitude": annotation.coordinate.longitude
         ]
 
-        channel.invokeMethod("onMarkerClick", arguments: args)
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onMarkerClick", arguments: args)
+        }
 
         mapView.deselectAnnotation(annotation, animated: false)
         
@@ -1132,7 +1251,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         "longitude": coordinate.longitude
       ]
 
-      channel.invokeMethod("onMapClick", arguments: args)
+
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onMapClick", arguments: args)
+        }
+
     }
 
     // 地图开始移动
@@ -1150,13 +1273,19 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         
         let center = mapView.centerCoordinate
 
-      channel.invokeMethod("onCameraMoveStart", arguments: [
-        "latitude": center.latitude,
-        "longitude": center.longitude,
-        "zoom": mapView.zoomLevel,
-        "tilt": 0,
-        "bearing": mapView.rotationDegree,
-      ])
+      
+        
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onCameraMoveStart", arguments: [
+              "latitude": center.latitude,
+              "longitude": center.longitude,
+              "zoom": mapView.zoomLevel,
+              "tilt": 0,
+              "bearing": mapView.rotationDegree,
+            ])
+        }
+        
+        
     }
 
     // 地图移动结束
@@ -1177,13 +1306,17 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         
       let center = mapView.centerCoordinate
 
-      channel.invokeMethod("onCameraIdle", arguments: [
-        "latitude": center.latitude,
-        "longitude": center.longitude,
-        "zoom": mapView.zoomLevel,
-        "tilt": 0,
-        "bearing": mapView.rotationDegree,
-      ])
+        
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onCameraIdle", arguments: [
+                "latitude": center.latitude,
+                "longitude": center.longitude,
+                "zoom": mapView.zoomLevel,
+                "tilt": 0,
+                "bearing": mapView.rotationDegree,
+              ])
+        }
+        
     }
 
     
@@ -1213,14 +1346,17 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
           lastMoveCallbackTime = now
 
       let center = mapView.centerCoordinate
-
-      channel.invokeMethod("onCameraMove", arguments: [
-        "latitude": center.latitude,
-        "longitude": center.longitude,
-        "zoom": mapView.zoomLevel,
-        "tilt": 0,
-        "bearing": mapView.rotationDegree,
-      ])
+        
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onCameraMove", arguments: [
+              "latitude": center.latitude,
+              "longitude": center.longitude,
+              "zoom": self.mapView.zoomLevel,
+              "tilt": 0,
+              "bearing": self.mapView.rotationDegree,
+            ])
+        }
+        
     }
 
     

@@ -387,10 +387,13 @@ class _MyAppState extends State<MyApp> {
                                 item.distance.toString()
                                 +
                                 " --- " +
-                                item.pcode!
+                                item.province!
                                 +
                                 " --- " +
-                                item.adcode.toString()
+                                item.city.toString()
+                                +
+                                " --- " +
+                                item.district.toString()
                                 +
                                 " --- " +
                                 item.id.toString()
