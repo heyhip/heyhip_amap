@@ -22,8 +22,8 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
     try {
       await methodChannel.invokeMethod('initKey', {'apiKey': apiKey});
     } on PlatformException catch (e) {
-      print(e.code);
-      print(e.message);
+      // print(e.code);
+      // print(e.message);
     }
   }
 
@@ -40,8 +40,8 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
         'hasAgree': hasAgree,
       });
     } on PlatformException catch (e) {
-      print(e.code);
-      print(e.message);
+      // print(e.code);
+      // print(e.message);
     }
   }
 
