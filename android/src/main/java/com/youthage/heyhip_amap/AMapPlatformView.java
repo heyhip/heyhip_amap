@@ -1523,6 +1523,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                     // ⚠️ Text Search 下 distance 可能为 0
                     map.put("distance", poi.getDistance() > 0 ? poi.getDistance() : null);
 
+
+                    map.put("pcode", poi.getPcode());
+                    map.put("adcode", poi.getAdCode());
+
                     pois.add(map);
                 }
 

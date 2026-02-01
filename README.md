@@ -62,6 +62,18 @@ Info.plist 配置高德 Key
 <key>AMapApiKey</key>
 <string>YOUR_AMAP_KEY</string>
 
+ios/Podfile文件添加如下
+target 'Runner' do
+  # use_frameworks!
+
+  # 添加静态
+  use_frameworks! :linkage => :static
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
 
 Basic Usage
 创建 Controller

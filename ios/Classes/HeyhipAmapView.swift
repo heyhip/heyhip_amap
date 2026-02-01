@@ -406,7 +406,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         case 1: // satellite
             mapView.mapType = .satellite
 
-        case 2: // night（Android night → iOS naviNight）
+        case 2:
             mapView.mapType = .naviNight
 
         case 3: // navi
@@ -421,10 +421,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     }
 
 
-    
-// 地图加载完成
+    // 地图加载完成
     public func mapViewDidFinishLoadingMap(_ mapView: MAMapView) {
-      print("✅ iOS AMap mapViewDidFinishLoadingMap")
+
 
       channel.invokeMethod("onMapLoaded", arguments: nil)
     }
@@ -507,7 +506,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 let lng = item["longitude"] as? Double
             else { continue }
 
-//            let ann = MAPointAnnotation()
             let ann = HeyhipPointAnnotation()
             ann.coordinate = CLLocationCoordinate2D(
                 latitude: lat,
@@ -519,9 +517,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
               ann.iconInfo = icon
             }
             
-//            if let popup = item["popup"] as? [String: Any] {
-//              ann.popup = popup
-//            }
             
             if let popupMap = item["popup"] as? [String: Any] {
                 ann.popup = HeyhipMarkerPopup(map: popupMap)
@@ -530,10 +525,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             annotations[id] = ann
         }
 
-        // ③ 一次性加到地图
-//        if !annotations.isEmpty {
-//            mapView.addAnnotations(Array(annotations.values))
-//        }
+
         
         refreshClusters()
 
@@ -621,17 +613,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         view?.subviews
           .filter { $0 is HeyhipInfoWindowView }
           .forEach { $0.removeFromSuperview() }
-
-//        if let popup = ann.popup {
-//          let infoView = HeyhipInfoWindowView(popup: popup)
-//
-//          infoView.center = CGPoint(
-//            x: view!.bounds.width / 2,
-//            y: -infoView.bounds.height / 2 - 8
-//          )
-//
-//          view?.addSubview(infoView)
-//        }
         
         view?.canShowCallout = false
         view?.subviews.forEach { sub in
@@ -649,14 +630,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         switch type {
 
         case "asset":
-//          if let path = iconInfo["value"] as? String {
-//            view?.image = UIImage(named: path)
-//          }
-            
+
             if let path = iconInfo["value"] as? String {
-//                let key = registrar.lookupKey(forAsset: path)
-//                view?.image = UIImage(contentsOfFile: key)
-                
+
                 let assetKey = registrar.lookupKey(forAsset: path)
                 let assetPath = Bundle.main.path(forResource: assetKey, ofType: nil)
                 view?.image = assetPath.flatMap { UIImage(contentsOfFile: $0) }
@@ -1005,7 +981,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 "longitude": poi.location.longitude,
                 "address": poi.address ?? "",
                 "type": poi.type ?? "",
-                "distance": distance as Any
+                "distance": distance as Any,
+                "pcode": poi.pcode ?? "",
+                "adcode": poi.adcode ?? ""
             ]
         }
 
@@ -1095,94 +1073,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         channel.invokeMethod("onMarkerClick", arguments: args)
 
         mapView.deselectAnnotation(annotation, animated: false)
-        
-        
-        
-        
-        
-        
-        
-        // 立刻取消选中
-//          mapView.deselectAnnotation(view.annotation, animated: false)
-        
-//      guard
-//        let annotation = view.annotation as? HeyhipPointAnnotation,
-//        let markerId = annotation.title
-//      else {
-//        return
-//      }
-//
-//      let args: [String: Any] = [
-//        "markerId": markerId,
-//        "latitude": annotation.coordinate.latitude,
-//        "longitude": annotation.coordinate.longitude
-//      ]
-//
-//      channel.invokeMethod("onMarkerClick", arguments: args)
-//        
-//        
-//        // ===== 情况 1：再次点击同一个 marker → 关闭 =====
-//          if showingAnnotation === annotation {
-//            showingInfoWindow?.removeFromSuperview()
-//            showingInfoWindow = nil
-//            showingAnnotation = nil
-//
-//            mapView.deselectAnnotation(annotation, animated: false)
-//            return
-//          }
-        
-        
-//        showInfoWindow(for: annotation, from: view)
-        // ⚠️ 核心：延迟到下一帧再算坐标
-//            DispatchQueue.main.async {
-//                self.showInfoWindow(for: annotation, from: view)
-//            }
-        
-        /*
-        // ===== 情况 2：点击了其他 marker → 先关旧的 =====
-          showingInfoWindow?.removeFromSuperview()
-          showingInfoWindow = nil
-          showingAnnotation = nil
-
-          // ===== 没有 popup 不显示 =====
-          guard let popup = annotation.popup else {
-            mapView.deselectAnnotation(annotation, animated: false)
-            return
-          }
-
-          // ===== 创建 InfoWindow =====
-        let infoView = HeyhipInfoWindowView(popup: popup)
-
-        // ① 强制 layout，让 AutoLayout 算出真实尺寸
-        infoView.layoutIfNeeded()
-
-        // ② 让内容决定 size
-        let size = infoView.systemLayoutSizeFitting(
-          UIView.layoutFittingCompressedSize
-        )
-
-        // ③ 设置 frame（关键）
-        infoView.frame = CGRect(
-          x: (view.bounds.width - size.width) / 2,
-          y: -size.height - 8,   // 👈 只往上，不要再减 marker 高度
-          width: size.width,
-          height: size.height
-        )
-
-        view.addSubview(infoView)
-
-
-          // ===== 记录当前状态 =====
-          showingInfoWindow = infoView
-          showingAnnotation = annotation
-
-        
-        */
-        
-        
-          // 立刻取消系统选中态（否则会影响再次点击）
-//          mapView.deselectAnnotation(annotation, animated: false)
-        
         
     }
     

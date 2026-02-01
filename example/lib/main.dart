@@ -19,8 +19,8 @@ import 'package:heyhip_amap_example/HomeController.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await HeyhipAmap.initKey(androidKey: "", iosKey: "");
-  await HeyhipAmap.updatePrivacy(
+  HeyhipAmap.initKey(androidKey: "", iosKey: "");
+  HeyhipAmap.updatePrivacy(
     hasAgree: true,
     hasShow: true,
     hasContains: true,
@@ -378,13 +378,25 @@ class _MyAppState extends State<MyApp> {
                         debugPrint(resutl.toString());
                         resutl.forEach((item) {
                           debugPrint(
-                            item.name +
+                            item.name.toString() +
                                 " --- " +
-                                item.address +
+                                item.address! +
                                 " --- " +
-                                item.position.longitude.toString() +
+                                item.position!.longitude.toString() +
                                 " --- " +
-                                item.distance.toString(),
+                                item.distance.toString()
+                                +
+                                " --- " +
+                                item.pcode!
+                                +
+                                " --- " +
+                                item.adcode.toString()
+                                +
+                                " --- " +
+                                item.id.toString()
+                                
+                                
+                                ,
                           );
                         });
                       },
@@ -404,13 +416,14 @@ class _MyAppState extends State<MyApp> {
                         debugPrint(resutl.toString());
                         resutl.forEach((item) {
                           debugPrint(
-                            item.name +
+                            item.name.toString() +
                                 " --- " +
-                                item.address +
+                                item.address.toString() +
                                 " --- " +
-                                item.position.longitude.toString() +
+                                item.position!.longitude.toString() +
                                 " --- " +
                                 item.distance.toString(),
+                                
                           );
                         });
                       },
