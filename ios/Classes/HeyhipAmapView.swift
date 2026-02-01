@@ -280,6 +280,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     
     
     private var annotations: [String: MAPointAnnotation] = [:]
+    private var clusterAnnotations: [MAPointAnnotation] = []
+    
+    private var didNotifyMapLoaded = false
         
  
     // 是否开启持续移动
@@ -396,6 +399,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         guard let self = self else { return }
 
         switch call.method {
+        case "detach":
+            self.handleDetach(result: result)
+            break;
         case "moveCamera":
           self.handleMoveCamera(call: call, result: result)
         case "setMarkers":
@@ -403,7 +409,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         case "setZoom":
             self.handleSetZoom(call: call, result: result)
         case "getCameraPosition":
-            self.handleGetCameraPosition(result: result);
+            self.handleGetCameraPosition(result: result)
             break;
         case "searchPoisByLatLng":
             self.handleSearchPoisByLatLng(call: call, result: result)
@@ -457,8 +463,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
     // 地图加载完成
     public func mapViewDidFinishLoadingMap(_ mapView: MAMapView) {
+        guard !didNotifyMapLoaded else { return }
         guard mapView.window != nil else { return }
-
+        didNotifyMapLoaded = true
         DispatchQueue.main.async {
                 self.channel.invokeMethod("onMapLoaded", arguments: nil)
             }
@@ -593,7 +600,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     ) -> MAAnnotationView? {
         
         // ===== 聚合点 =====
-        if annotation.title == "cluster" {
+        if annotation.title == "__cluster__" {
 
             let reuseId = "clusterView"
             var view = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId)
@@ -803,11 +810,14 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
     // 刷新聚合（核心）
     // ======================
     private func refreshClusters() {
-        
+        guard mapView.window != nil else { return }
 
         // 1️⃣ 如果没开聚合，直接显示原始 marker
         guard clusterEnabled else {
-            mapView.removeAnnotations(mapView.annotations)
+//            mapView.removeAnnotations(mapView.annotations)
+            mapView.removeAnnotations(Array(annotations.values))
+            mapView.removeAnnotations(clusterAnnotations)
+            clusterAnnotations.removeAll()
             mapView.addAnnotations(Array(annotations.values))
             return
         }
@@ -836,7 +846,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         )
 
         // 4️⃣ 清空地图上所有 annotation
-        mapView.removeAnnotations(mapView.annotations)
+//        mapView.removeAnnotations(mapView.annotations)
+        mapView.removeAnnotations(Array(annotations.values))
+        mapView.removeAnnotations(clusterAnnotations)
+        clusterAnnotations.removeAll()
+        
 
         // 5️⃣ 重新生成 annotation
         var newAnnotations: [MAPointAnnotation] = []
@@ -853,9 +867,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 let ann = MAPointAnnotation()
                 ann.coordinate = cluster.center
 //                ann.title = "cluster_\(cluster.items.count)"
-                ann.title = "cluster"
+                ann.title = "__cluster__"
                 ann.subtitle = "\(cluster.items.count)"
                 newAnnotations.append(ann)
+                
+                clusterAnnotations.append(ann)
             }
         }
 
@@ -1142,7 +1158,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         
         
         // ===== 0️⃣ 聚合点：什么都不做（交给 view 点击）=====
-        if view.annotation?.title == "cluster" {
+        if view.annotation?.title == "__cluster__" {
             return
         }
 
@@ -1358,10 +1374,34 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         }
         
     }
+    
+    private func handleDetach(result: @escaping FlutterResult) {
+        didNotifyMapLoaded = true
+        
+        // 1️⃣ 停掉所有回调源
+        stopDisplayLink()
+        pendingPoiResult = nil
+
+        // 2️⃣ 解绑 delegate（防止后续回调）
+        mapView.delegate = nil
+        searchAPI.delegate = nil
+
+        // 3️⃣ 清空 annotation
+        mapView.removeAnnotations(mapView.annotations)
+        annotations.removeAll()
+        clusterAnnotations.removeAll()
+
+        DispatchQueue.main.async {
+            result(nil)
+        }
+    }
 
     
     deinit {
+        didNotifyMapLoaded = true
         stopDisplayLink()
+        pendingPoiResult = nil
+        searchAPI.delegate = nil
         channel.setMethodCallHandler(nil)
         mapView.delegate = nil
     }

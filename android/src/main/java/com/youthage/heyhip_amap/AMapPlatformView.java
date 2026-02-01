@@ -65,9 +65,9 @@ import com.amap.api.services.poisearch.PoiItem;
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
 
-    private final int viewId;
-    private final MapView mapView;
-    private final AMap aMap;
+    private int viewId;
+    private MapView mapView;
+    private AMap aMap;
     private MethodChannel channel;
     // 是否启用聚合
     private boolean clusterEnabled = false;
@@ -101,10 +101,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     private boolean isCameraMoving = false;
 
     // 单点 marker（真实数据）
-    private final Map<String, Marker> itemMarkers = new HashMap<>();
+    private Map<String, Marker> itemMarkers = new HashMap<>();
 
     // 聚合 marker
-    private final Map<String, Marker> clusterMarkers = new HashMap<>();
+    private Map<String, Marker> clusterMarkers = new HashMap<>();
 
     // 最近一次 Flutter 传下来的 markers（用于自动聚合）
     private List<HeyhipMarkerModel> lastMarkers;
@@ -120,10 +120,16 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     // 地图是否加载完成
     private boolean mapReady = false;
 
+
+    private boolean detached = false;
+    private boolean disposed = false;
+
+
+
     private static FlutterLoader flutterLoader;
 
     // Marker icon 内存缓存（url + size → Bitmap）
-    private static final LruCache<String, Bitmap> iconCache;
+    private static LruCache<String, Bitmap> iconCache;
 
     static {
         int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
@@ -314,11 +320,13 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 // ⭐ 原有：普通 marker 点击
                 // =========================
                 if (channel != null) {
-                    String markerId = (String) tag;
+                    MarkerTag markerTag = (MarkerTag) tag;
+                    // String markerId = (String) tag;
                     LatLng position = marker.getPosition();
 
                     Map<String, Object> map = new HashMap<>();
-                    map.put("markerId", markerId);
+                    // map.put("markerId", markerId);
+                    map.put("markerId", markerTag.id);
                     map.put("latitude", position.latitude);
                     map.put("longitude", position.longitude);
 
@@ -415,8 +423,32 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     @Override
     public void dispose() {
-        channel.setMethodCallHandler(null);
-        onDestroy();
+        if (disposed) return;
+        disposed = true;
+
+        detach(); // ⭐ 先逻辑解绑（防止回调）
+
+        if (mapView != null) {
+            try {
+                mapView.onPause();
+                mapView.onDestroy();
+            } catch (Exception ignored) {}
+            mapView = null;
+        }
+
+
+        // 清 marker（防止 native 引用）
+        for (Marker m : itemMarkers.values()) {
+            try { m.remove(); } catch (Exception ignored) {}
+        }
+        itemMarkers.clear();
+
+        for (Marker m : clusterMarkers.values()) {
+            try { m.remove(); } catch (Exception ignored) {}
+        }
+        clusterMarkers.clear();
+
+        aMap = null;
 
         // ⭐ 从注册表移除
         HeyhipAmapPlugin.MAP_VIEWS.remove(viewId);
@@ -452,6 +484,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         switch (call.method) {
+            case "detach":
+                detach();
+                result.success(null);
+                break;
             case "setMarkers":
                 handleSetMarkers(call, result);
                 break;
@@ -762,6 +798,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                             @NonNull Bitmap bitmap,
                             @Nullable Transition<? super Bitmap> transition
                     ) {
+                        if (detached || disposed) return;
+
                         if (bitmap.isRecycled()) return;
 
                         if (marker.getObject() != mTag) return;
@@ -787,6 +825,11 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     // 移动地图
     private void moveCamera(MethodCall call, MethodChannel.Result result) {
+
+        if (!mapReady) {
+            result.error("MAP_NOT_READY", "Map not ready", null);
+            return;
+        }
 
         Map<String, Object> target = call.argument("target");
         if (target == null) {
@@ -855,6 +898,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     // 刷新聚合
     private void refreshClusters(List<HeyhipMarkerModel> list) {
+        if (disposed || detached) return;
+
         if (!mapReady || list == null || aMap == null) return;
 
         float zoom = aMap.getCameraPosition().zoom;
@@ -1268,6 +1313,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         animator.setInterpolator(new DecelerateInterpolator());
 
         animator.addUpdateListener(animation -> {
+            if (disposed || detached) return;
+
             float v = (float) animation.getAnimatedValue();
 
             // alpha
@@ -1296,6 +1343,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         animator.setInterpolator(new DecelerateInterpolator());
 
         animator.addUpdateListener(animation -> {
+            if (disposed || detached) return;
             float v = (float) animation.getAnimatedValue();
             marker.setAlpha(v);
         });
@@ -1659,7 +1707,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         channel.invokeMethod("onCameraIdle", map);
 
         // ⭐ 自动刷新聚合（关键）
-        if (lastMarkers != null) {
+        if (!disposed && !detached && lastMarkers != null) {
             refreshClusters(lastMarkers);
         }
 
@@ -1686,6 +1734,33 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
     static class ClusterTag {
         Cluster cluster;
         int count;
+    }
+
+
+    private void detach() {
+        if (detached) return;
+        detached = true;
+
+         try {
+            Glide.with(mapView.getContext()).clearMemory();
+        } catch (Exception ignore) {}
+
+        // 1️⃣ 禁止再向 Flutter 回调
+        if (channel != null) {
+            channel.setMethodCallHandler(null);
+            channel = null;
+        }
+
+        // 2️⃣ 解绑所有地图监听
+        if (aMap != null) {
+            aMap.setOnMarkerClickListener(null);
+            aMap.setOnCameraChangeListener(null);
+            aMap.setOnMapClickListener(null);
+            aMap.setOnPOIClickListener(null);
+            aMap.setOnMapLoadedListener(null);
+            aMap.setInfoWindowAdapter(null);
+        }
+
     }
 
 

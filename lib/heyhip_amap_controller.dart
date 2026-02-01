@@ -30,6 +30,8 @@ class HeyhipAmapController {
 
   bool _mapReady = false;
 
+  bool _disposed = false;
+
   /// ⭐ 缓存的操作队列
   final List<Future<void> Function()> _pendingActions = [];
 
@@ -59,18 +61,21 @@ class HeyhipAmapController {
 
   // 绑定视图
   void attach(int viewId) {
-    if (_attached) return;
+    if (_disposed || _attached) return;
 
     _channel = MethodChannel('heyhip_amap_map_$viewId');
 
     // 接收事件
     _channel!.setMethodCallHandler((call) async {
+      if (_disposed) return;
+
       switch (call.method) {
         case 'onMapLoaded':
           markMapReady();
           break;
 
         case 'onMarkerClick':
+          if (call.arguments is! Map) return;
           final map = Map<String, dynamic>.from(call.arguments);
           final markerId = map['markerId'] as String;
           final lat = map['latitude'] as double;
@@ -80,6 +85,7 @@ class HeyhipAmapController {
           break;
 
         case 'onMapClick':
+          if (call.arguments is! Map) return;
           final map = Map<String, dynamic>.from(call.arguments);
           final lat = map['latitude'] as double;
           final lng = map['longitude'] as double;
@@ -88,34 +94,36 @@ class HeyhipAmapController {
           break;
 
         case 'onCameraIdle':
+          if (call.arguments is! Map) return;
           final map = Map<String, dynamic>.from(call.arguments);
           _onCameraIdle?.call(CameraPosition.fromMap(map));
           break;
 
         case 'onCameraMove':
+          if (call.arguments is! Map) return;
           final map = Map<String, dynamic>.from(call.arguments);
           _onCameraMove?.call(CameraPosition.fromMap(map));
           break;
 
         case 'onCameraMoveStart':
+          if (call.arguments is! Map) return;
           final map = Map<String, dynamic>.from(call.arguments);
           _onCameraMoveStart?.call(CameraPosition.fromMap(map));
           break;
 
         case 'onMarkerPopupToggle':
-          if (call.arguments is Map) {
-            final map = Map<String, dynamic>.from(call.arguments);
+          if (call.arguments is! Map) return;
+          final map = Map<String, dynamic>.from(call.arguments);
 
-            final markerId = map['markerId'] as String?;
-            final action = map['action'] as String?;
+          final markerId = map['markerId'] as String?;
+          final action = map['action'] as String?;
 
-            if (markerId != null && action != null) {
-              final isOpen = action == 'open';
-              final latitude = (map['latitude'] as num?)?.toDouble();
-              final longitude = (map['longitude'] as num?)?.toDouble();
+          if (markerId != null && action != null) {
+            final isOpen = action == 'open';
+            final latitude = (map['latitude'] as num?)?.toDouble();
+            final longitude = (map['longitude'] as num?)?.toDouble();
 
-              _onMarkerPopupToggle?.call(markerId, isOpen, latitude, longitude);
-            }
+            _onMarkerPopupToggle?.call(markerId, isOpen, latitude, longitude);
           }
           break;
 
@@ -153,6 +161,7 @@ class HeyhipAmapController {
 
     // ⭐ 回放所有缓存操作
     for (final action in _pendingActions) {
+      if (_disposed) break;
       action();
     }
     _pendingActions.clear();
@@ -195,9 +204,10 @@ class HeyhipAmapController {
 
   // 移动地图
   Future<void> moveCamera(CameraPosition position) async {
-    if (!_attached || _channel == null) {
-      throw StateError('AMapController is not attached to a map');
+    if (_disposed || !_attached || _channel == null) {
+      return;
     }
+
 
     Future<void> action() {
       return _channel!.invokeMethod('moveCamera', position.toMap());
@@ -214,17 +224,23 @@ class HeyhipAmapController {
 
   /// 仅修改缩放级别
   Future<void> setZoom(double zoom) async {
-    if (!_attached || _channel == null) {
-      throw StateError('AMapController is not attached to a map');
+    if (_disposed || !_attached || _channel == null) return;
+
+    Future<void> action() {
+      return _channel!.invokeMethod('setZoom', {'zoom': zoom});
     }
 
-    await _channel!.invokeMethod('setZoom', {'zoom': zoom});
+    if (_mapReady) {
+      await action();
+    } else {
+      _pendingActions.add(action);
+    }
   }
 
   /// 获取当前相机位置
   Future<Map<String, dynamic>> getCameraPosition() async {
-    if (!_attached || _channel == null) {
-      throw StateError('AMapController is not attached to a map');
+    if (_disposed || !_attached || _channel == null) {
+      return Map();
     }
 
     final result = await _channel!.invokeMethod<Map>('getCameraPosition');
@@ -233,8 +249,8 @@ class HeyhipAmapController {
 
   // 设置Markers
   Future<void> setMarkers(List<HeyhipMarker> markers) async {
-    if (!_attached || _channel == null) {
-      throw StateError('AMapController is not attached to a map');
+    if (_disposed || !_attached || _channel == null) {
+      return;
     }
 
     Future<void> action() {
@@ -252,8 +268,8 @@ class HeyhipAmapController {
 
   /// 动态设置地图类型
   Future<void> setMapType(int mapType) async {
-    if (!_attached || _channel == null) {
-      throw StateError('AMapController is not attached to a map');
+    if (_disposed || !_attached || _channel == null) {
+      return;
     }
 
     Future<void> action() {
@@ -275,6 +291,8 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
+    if (_disposed || !_attached || _channel == null) return [];
+
     final result = await _channel!.invokeMethod<List<dynamic>>(
       'searchPoisByLatLng',
       {
@@ -287,7 +305,7 @@ class HeyhipAmapController {
       },
     );
 
-    if (result == null) return [];
+    if (_disposed || result == null) return [];
 
     return result
         .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
@@ -302,6 +320,8 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
+    if (_disposed || !_attached || _channel == null) return [];
+
     final result = await _channel!.invokeMethod<List>('searchPoisByText', {
       'keyword': keyword,
       'city': city,
@@ -312,10 +332,54 @@ class HeyhipAmapController {
       'pageSize': pageSize,
     });
 
-    if (result == null) return [];
+    if (_disposed || result == null) return [];
 
     return result
         .map((e) => HeyhipPoi.fromMap(Map<String, dynamic>.from(e)))
         .toList();
   }
+
+  
+  /// 对 native 说：我要断开了（生命周期信号）
+  Future<void> detachNative() async {
+    if (_disposed || !_attached || _channel == null) return;
+    try {
+      await _channel!.invokeMethod('detach');
+    } catch (_) {
+      // native 已销毁时，这里允许静默失败
+    }
+  }
+
+  /// Dart 侧真正的 detach（清引用、断 channel）
+  void _detachLocal() {
+    _channel?.setMethodCallHandler(null);
+    _channel = null;
+    _attached = false;
+    _mapReady = false;
+  }
+
+
+  void dispose() {
+    if (_disposed) return;
+
+    detachNative();
+
+    _disposed = true;
+
+    _detachLocal();
+
+    _onMapLoaded = null;
+    _onMapClick = null;
+    _onCameraMove = null;
+    _onCameraMoveStart = null;
+    _onCameraIdle = null;
+    _onMarkerClick = null;
+    _onMarkerPopupToggle = null;
+
+    _pendingActions.clear();
+  }
+
+
+
+
 }
