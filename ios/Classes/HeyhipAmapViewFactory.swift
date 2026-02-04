@@ -23,8 +23,6 @@ class HeyhipAmapViewFactory: NSObject, FlutterPlatformViewFactory {
     arguments args: Any?
   ) -> FlutterPlatformView {
 
-//    print("✅ HeyhipAmapViewFactory create called, frame = \(frame)")
-
     return HeyhipAmapView(
       frame: frame,
       viewId: viewId,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:heyhip_amap/camera_position.dart';
 import 'package:heyhip_amap/heyhip_marker.dart';
 import 'package:heyhip_amap/heyhip_poi.dart';
+import 'package:heyhip_amap/map_type.dart';
 
 typedef MapClickCallback = void Function(LatLng latLng);
 typedef CameraMoveStartCallback = void Function(CameraPosition position);
@@ -20,7 +21,6 @@ typedef MarkerPopupToggleCallback =
 // 地图控制器
 class HeyhipAmapController {
   MethodChannel? _channel;
-  bool _attached = false;
 
   VoidCallback? _onMapLoaded;
 
@@ -61,14 +61,13 @@ class HeyhipAmapController {
 
   // 绑定视图
   void attach(int viewId) {
-    if (_disposed || _attached) return;
+    if (_disposed) return;
 
     _channel = MethodChannel('heyhip_amap_map_$viewId');
 
     // 接收事件
     _channel!.setMethodCallHandler((call) async {
-      if (_disposed) return;
-
+      // 开始
       switch (call.method) {
         case 'onMapLoaded':
           markMapReady();
@@ -132,7 +131,6 @@ class HeyhipAmapController {
       }
     });
 
-    _attached = true;
   }
 
   // 高德地图完成
@@ -204,7 +202,7 @@ class HeyhipAmapController {
 
   // 移动地图
   Future<void> moveCamera(CameraPosition position) async {
-    if (_disposed || !_attached || _channel == null) {
+    if (_disposed || _channel == null) {
       return;
     }
 
@@ -224,7 +222,7 @@ class HeyhipAmapController {
 
   /// 仅修改缩放级别
   Future<void> setZoom(double zoom) async {
-    if (_disposed || !_attached || _channel == null) return;
+    if (_disposed) return;
 
     Future<void> action() {
       return _channel!.invokeMethod('setZoom', {'zoom': zoom});
@@ -239,7 +237,7 @@ class HeyhipAmapController {
 
   /// 获取当前相机位置
   Future<Map<String, dynamic>> getCameraPosition() async {
-    if (_disposed || !_attached || _channel == null) {
+    if (_disposed || _channel == null) {
       return Map();
     }
 
@@ -249,7 +247,7 @@ class HeyhipAmapController {
 
   // 设置Markers
   Future<void> setMarkers(List<HeyhipMarker> markers) async {
-    if (_disposed || !_attached || _channel == null) {
+    if (_disposed || _channel == null) {
       return;
     }
 
@@ -267,13 +265,13 @@ class HeyhipAmapController {
   }
 
   /// 动态设置地图类型
-  Future<void> setMapType(int mapType) async {
-    if (_disposed || !_attached || _channel == null) {
+  Future<void> setMapType(MapType mapType) async {
+    if (_disposed || _channel == null) {
       return;
     }
 
     Future<void> action() {
-      return _channel!.invokeMethod('setMapType', mapType);
+      return _channel!.invokeMethod('setMapType', mapType.value);
     }
 
     if (_mapReady) {
@@ -291,7 +289,7 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
-    if (_disposed || !_attached || _channel == null) return [];
+    if (_disposed || _channel == null) return [];
 
     final result = await _channel!.invokeMethod<List<dynamic>>(
       'searchPoisByLatLng',
@@ -320,7 +318,7 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
-    if (_disposed || !_attached || _channel == null) return [];
+    if (_disposed || _channel == null) return [];
 
     final result = await _channel!.invokeMethod<List>('searchPoisByText', {
       'keyword': keyword,
@@ -340,9 +338,9 @@ class HeyhipAmapController {
   }
 
   
-  /// 对 native 说：我要断开了（生命周期信号）
-  Future<void> detachNative() async {
-    if (_disposed || !_attached || _channel == null) return;
+  Future<void> _detachNative() async {
+    if (_disposed || _channel == null) return;
+
     try {
       await _channel!.invokeMethod('detach');
     } catch (_) {
@@ -350,24 +348,15 @@ class HeyhipAmapController {
     }
   }
 
-  /// Dart 侧真正的 detach（清引用、断 channel）
-  void _detachLocal() {
-    _channel?.setMethodCallHandler(null);
-    _channel = null;
-    _attached = false;
-    _mapReady = false;
-  }
-
 
   void dispose() {
     if (_disposed) return;
-
-    detachNative();
-
-    _disposed = true;
-
-    _detachLocal();
-
+    _detachNative();
+  
+     _disposed = true;
+    _channel?.setMethodCallHandler(null);
+    _channel = null;
+    _mapReady = false;
     _onMapLoaded = null;
     _onMapClick = null;
     _onCameraMove = null;
@@ -375,7 +364,6 @@ class HeyhipAmapController {
     _onCameraIdle = null;
     _onMarkerClick = null;
     _onMarkerPopupToggle = null;
-
     _pendingActions.clear();
   }
 

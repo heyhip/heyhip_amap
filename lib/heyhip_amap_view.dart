@@ -6,7 +6,11 @@ import 'package:heyhip_amap/cluster_style.dart';
 import 'package:heyhip_amap/heyhip_amap_controller.dart';
 import 'package:heyhip_amap/map_type.dart';
 
-class HeyhipAmapView extends StatelessWidget {
+typedef HeyhipAmapViewCreatedCallback = void Function(HeyhipAmapController controller);
+
+class HeyhipAmapView extends StatefulWidget {
+  // const HeyhipAmapView({super.key});
+
   final double? latitude;
   final double? longitude;
   final double? zoom;
@@ -22,11 +26,8 @@ class HeyhipAmapView extends StatelessWidget {
   /// 是否开启持续移动
   final bool enableCameraMoving;
 
-  /// ✅ 外部传入的 Controller
-  final HeyhipAmapController controller;
-
   /// ✅ 新增：地图创建完成回调
-  final VoidCallback? onMapCreated;
+  final HeyhipAmapViewCreatedCallback? onMapCreated;
 
   /// ⭐ UI 设置
   final AMapUiSettings uiSettings;
@@ -36,7 +37,6 @@ class HeyhipAmapView extends StatelessWidget {
     this.latitude,
     this.longitude,
     this.zoom = 14,
-    required this.controller,
     this.onMapCreated,
     this.uiSettings = const AMapUiSettings(),
     this.mapType = MapType.normal,
@@ -46,19 +46,52 @@ class HeyhipAmapView extends StatelessWidget {
     this.enableCameraMoving = false,
   });
 
+
+  @override
+  State<HeyhipAmapView> createState() => _HeyhipAmapViewState();
+}
+
+class _HeyhipAmapViewState extends State<HeyhipAmapView> {
+
+  late final HeyhipAmapController _controller;
+
+  /*
+  @override
+  void didUpdateWidget(covariant HeyhipAmapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.mapType != widget.mapType) {
+      widget.controller.setMapType(widget.mapType.value);
+    }
+  }
+  */
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = HeyhipAmapController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+
     String viewType = 'heyhip_amap_map';
     final creationParams = {
-      'latitude': latitude,
-      'longitude': longitude,
-      'zoom': zoom,
-      'uiSettings': uiSettings.toMap(),
-      'mapType': mapType.value,
-      'clusterEnabled': clusterEnabled,
-      'clusterStyle': clusterStyle?.toMap(),
-      'enableMarkerPopup': enableMarkerPopup,
-      'enableCameraMoving': enableCameraMoving,
+      'latitude': widget.latitude,
+      'longitude': widget.longitude,
+      'zoom': widget.zoom,
+      'uiSettings': widget.uiSettings.toMap(),
+      'mapType': widget.mapType.value,
+      'clusterEnabled': widget.clusterEnabled,
+      'clusterStyle': widget.clusterStyle?.toMap(),
+      'enableMarkerPopup': widget.enableMarkerPopup,
+      'enableCameraMoving': widget.enableCameraMoving,
     };
 
     if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -67,11 +100,6 @@ class HeyhipAmapView extends StatelessWidget {
         creationParams: creationParams,
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
-        // gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-        //     Factory<OneSequenceGestureRecognizer>(
-        //       () => EagerGestureRecognizer(),
-        //     ),
-        //   },
       );
     }
 
@@ -84,17 +112,19 @@ class HeyhipAmapView extends StatelessWidget {
   }
 
   void _onPlatformViewCreated(int viewId) {
-    controller.attach(viewId);
+    _controller.attach(viewId);
 
     // ⭐ 把初始相机参数交给 controller
-    if (latitude != null && longitude != null) {
-      controller.initialCamera(
-        latitude: latitude!,
-        longitude: longitude!,
-        zoom: zoom ?? 14,
+    if (widget.latitude != null && widget.longitude != null) {
+      _controller.initialCamera(
+        latitude: widget.latitude!,
+        longitude: widget.longitude!,
+        zoom: widget.zoom ?? 14,
       );
     }
 
-    onMapCreated?.call();
+    widget.onMapCreated?.call(_controller);
   }
+
+
 }

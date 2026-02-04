@@ -88,22 +88,22 @@ class _MyAppState extends State<MyApp> {
       // );
 
       // mapController.moveCamera(latitude: latitude, longitude: longitude, zoom: 14);
-      mapController.moveCamera(
+      mapController?.moveCamera(
         CameraPosition(target: LatLng(latitude, longitude)),
       );
     }
   }
 
   void setZoom() async {
-    mapController.setZoom(18);
+    mapController?.setZoom(18);
   }
 
   void getPosition() async {
-    final pos = await mapController.getCameraPosition();
+    final pos = await mapController?.getCameraPosition();
     print(pos);
   }
 
-  HeyhipAmapController mapController = HeyhipAmapController();
+  HeyhipAmapController? mapController;
 
   //   final markers = [
   //   {
@@ -159,7 +159,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_1',
       latitude: 30.482251,
       longitude: 104.080003,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
       popup: HeyhipMarkerPopup(
         title: "豆腐干恢复低功耗的法国",
         subtitle: "发生的固化速度发货速度发送给对方",
@@ -171,7 +171,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_2',
       latitude: 30.482351,
       longitude: 104.080103,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
     ),
     HeyhipMarker(
       id: 'marker_3',
@@ -212,7 +212,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_8',
       latitude: 30.49,
       longitude: 104.09,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
       popup: HeyhipMarkerPopup(
         title: "测试头像",
         subtitle: "这撒旦发射点",
@@ -255,22 +255,23 @@ class _MyAppState extends State<MyApp> {
                       // scaleControlsEnabled: true
                     ),
                     mapType: MapType.normal,
-                    clusterEnabled: true,
+                    clusterEnabled: false,
                     clusterStyle: ClusterStyle(
                       bgColor: Color(0xFFE91E63),
                       textColor: Colors.blue,
                       showStroke: true,
                       strokeColor: Colors.black,
                     ),
-                    controller: mapController,
-                    onMapCreated: () {
-                      mapController.onMapLoadFinish(() {
+                    // controller: mapController,
+                    onMapCreated: (constroller) {
+                      mapController = constroller;
+                      constroller.onMapLoadFinish(() {
                         print("地图完成");
 
-                        mapController.setMarkers(markers);
+                        // constroller.setMarkers(markers);
                       });
-
-                      mapController.onCameraMove((position) {
+                      mapController?.setMarkers(markers);
+                      mapController?.onCameraMove((position) {
                         // final LatLng target;
                         // final double? zoom;
                         // final double? tilt;
@@ -284,7 +285,7 @@ class _MyAppState extends State<MyApp> {
                         );
                       });
 
-                      mapController.onCameraIdle((position) {
+                      mapController?.onCameraIdle((position) {
                         var lat = position.target.latitude;
                         var lng = position.target.longitude;
                         var zoom = position.zoom;
@@ -294,7 +295,7 @@ class _MyAppState extends State<MyApp> {
                         );
                       });
 
-                      mapController.onCameraMoveStart((position) {
+                      mapController?.onCameraMoveStart((position) {
                         var lat = position.target.latitude;
                         var lng = position.target.longitude;
                         var zoom = position.zoom;
@@ -304,14 +305,14 @@ class _MyAppState extends State<MyApp> {
                         );
                       });
 
-                      mapController.onMapClick((latLng) {
+                      mapController?.onMapClick((latLng) {
                         print('点击地图：${latLng.latitude}, ${latLng.longitude}');
-                        mapController.moveCamera(
+                        mapController?.moveCamera(
                           CameraPosition(target: latLng),
                         );
                       });
 
-                      mapController.onMarkerPopupToggle((
+                      mapController?.onMarkerPopupToggle((
                         markerId,
                         isOpen,
                         lat,
@@ -322,11 +323,11 @@ class _MyAppState extends State<MyApp> {
                         );
                       });
 
-                      mapController.onMarkerClick((id, laglng) {
+                      mapController?.onMarkerClick((id, laglng) {
                         debugPrint('marker=${id}');
                       });
 
-                      mapController.setMarkers(markers);
+                      mapController?.setMarkers(markers);
                     },
 
                     // );
@@ -355,7 +356,7 @@ class _MyAppState extends State<MyApp> {
                     InkWell(
                       onTap: () {
                         //  Homecontroller.to.updateIddd();
-                        mapController.moveCamera(
+                        mapController?.moveCamera(
                           CameraPosition(
                             target: LatLng(30.482251, 104.080003),
                             zoom: 14,
@@ -371,12 +372,11 @@ class _MyAppState extends State<MyApp> {
                         //  Homecontroller.to.updateIddd();
                         // mapController.moveCamera(CameraPosition(target: LatLng(30.482251, 104.080003), zoom: 14));
 
-                        List<HeyhipPoi> resutl = await mapController
-                            .searchPoisByLatLng(LatLng(30.482251, 104.080003));
+                        List<HeyhipPoi>? resutl = await mapController?.searchPoisByLatLng(LatLng(30.482251, 104.080003));
                         print("================");
-                        print(resutl.length);
+                        print(resutl?.length);
                         debugPrint(resutl.toString());
-                        resutl.forEach((item) {
+                        resutl?.forEach((item) {
                           debugPrint(
                             item.name.toString() +
                                 " --- " +
@@ -412,12 +412,11 @@ class _MyAppState extends State<MyApp> {
                         //  Homecontroller.to.updateIddd();
                         // mapController.moveCamera(CameraPosition(target: LatLng(30.482251, 104.080003), zoom: 14));
 
-                        List<HeyhipPoi> resutl = await mapController
-                            .searchPoisByText('洛森堡新殿');
+                        List<HeyhipPoi>? resutl = await mapController?.searchPoisByText('洛森堡新殿');
                         print("================");
-                        print(resutl.length);
+                        print(resutl?.length);
                         debugPrint(resutl.toString());
-                        resutl.forEach((item) {
+                        resutl?.forEach((item) {
                           debugPrint(
                             item.name.toString() +
                                 " --- " +

@@ -78,8 +78,28 @@ end
 Basic Usage
 创建 Controller
 
-final controller = HeyhipAmapController();
+HeyhipAmapController? mapController;
 
+
+final List<HeyhipMarker> markers = [
+    HeyhipMarker(
+      id: 'marker_1',
+      latitude: 30.482251,
+      longitude: 104.080003,
+      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
+      popup: HeyhipMarkerPopup(
+        title: "标题",
+        subtitle: "副标题",
+        avatar: "xxx",
+      ),
+    ),
+    HeyhipMarker(
+      id: 'marker_2',
+      latitude: 30.482351,
+      longitude: 104.080103,
+      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
+    ),
+];
 
 HeyhipAmapView(
   latitude: 31.2304,
@@ -88,41 +108,39 @@ HeyhipAmapView(
   controller: controller,
   clusterEnabled: true,
   enableMarkerPopup: true,
+  onMapCreated: (controller) {
+      mapController = controller;
+
+      mapController?.setMarkers(markers);
+
+      mapController.moveCamera(
+        CameraPosition(
+          target: LatLng(31.2304, 121.4737),
+          zoom: 16,
+        ),
+      );
+
+      mapController.searchPoisByLatLng(
+        LatLng(31.2304, 121.4737),
+        radius: 1000,
+        page: 1,
+        pageSize: 20,
+      );
+
+
+      mapController.searchPoisByText(
+        '咖啡',
+        city: '上海',
+        page: 1,
+        pageSize: 20,
+      );
+
+
+    },
+              
 )
 
-controller.moveCamera(
-  CameraPosition(
-    target: LatLng(31.2304, 121.4737),
-    zoom: 16,
-  ),
-);
 
-
-controller.setMarkers([
-  HeyhipMarker(
-    id: '1',
-    latitude: 31.2304,
-    longitude: 121.4737,
-    title: 'Marker Title',
-    snippet: 'Marker Description',
-  ),
-]);
-
-
-controller.searchPoisByLatLng(
-  LatLng(31.2304, 121.4737),
-  radius: 1000,
-  page: 1,
-  pageSize: 20,
-);
-
-
-controller.searchPoisByText(
-  '咖啡',
-  city: '上海',
-  page: 1,
-  pageSize: 20,
-);
 ```
 
 

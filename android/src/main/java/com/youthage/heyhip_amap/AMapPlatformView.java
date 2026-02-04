@@ -1315,14 +1315,21 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         animator.addUpdateListener(animation -> {
             if (disposed || detached) return;
 
-            float v = (float) animation.getAnimatedValue();
+            // float v = (float) animation.getAnimatedValue();
 
-            // alpha
-            marker.setAlpha(v);
+            // // alpha
+            // marker.setAlpha(v);
 
-            // scale（通过 anchor + 假 scale）
-            marker.setAnchor(0.5f, 0.5f);
-            marker.setZIndex(v);
+            // // scale（通过 anchor + 假 scale）
+            // marker.setAnchor(0.5f, 0.5f);
+            // marker.setZIndex(v);
+
+            try {
+                float v = (float) animation.getAnimatedValue();
+                marker.setAlpha(v);
+                marker.setAnchor(0.5f, 0.5f);
+                marker.setZIndex(v);
+            } catch (Exception ignore) {}
         });
 
         animator.start();
@@ -1437,6 +1444,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
             @Override
             public void onPoiSearched(PoiResult poiResult, int errorCode) {
+
+                if (disposed || detached) return;
+
 
                 if (errorCode != 1000 || poiResult == null) {
                     result.error(
@@ -1613,7 +1623,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     // 发送地图加载完成消息
     private void notifyMapLoaded() {
-        if (channel == null) return;
+        if (disposed || detached || channel == null) return;
 
         channel.invokeMethod("onMapLoaded", null);
     }
@@ -1741,9 +1751,14 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         if (detached) return;
         detached = true;
 
-         try {
-            Glide.with(mapView.getContext()).clearMemory();
+        try {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                try {
+                    Glide.get(mapView.getContext()).clearMemory();
+                } catch (Exception ignore) {}
+            });
         } catch (Exception ignore) {}
+
 
         // 1️⃣ 禁止再向 Flutter 回调
         if (channel != null) {
