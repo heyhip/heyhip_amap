@@ -5,6 +5,39 @@ import SDWebImage
 import AMapSearchKit
 
 
+struct HeyhipMarkerIcon {
+
+    enum IconType: String {
+        case asset
+        case network
+        case base64
+    }
+
+    let type: IconType
+    let value: String
+    let width: CGFloat
+    let height: CGFloat
+
+
+    init?(map: [String: Any]) {
+        guard
+            let typeStr = map["type"] as? String,
+            let type = IconType(rawValue: typeStr),
+            let value = map["value"] as? String
+        else {
+            return nil
+        }
+
+        self.type = type
+        self.value = value
+        self.width = CGFloat(map["width"] as? Double ?? 48)
+        self.height = CGFloat(map["height"] as? Double ?? 48)
+    }
+}
+
+
+
+
 
 struct HeyhipMarkerPopup {
     let title: String?
@@ -20,13 +53,7 @@ struct HeyhipMarkerPopup {
 
 
 class HeyhipPointAnnotation: MAPointAnnotation {
-  var iconInfo: [String: Any]?
-    
-    /// ⭐ icon 显示宽度（Flutter 传）
-        var iconWidth: CGFloat = 40
-
-        /// ⭐ icon 显示高度（Flutter 传）
-        var iconHeight: CGFloat = 40
+  var icon: HeyhipMarkerIcon?
     
     var popup: HeyhipMarkerPopup?
 }
@@ -258,6 +285,18 @@ extension MAAnnotationView {
         }
     }
 }
+
+extension UIImage {
+    func heyhip_resized(to size: CGSize) -> UIImage {
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = UIScreen.main.scale
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
 
 
 
@@ -551,17 +590,8 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             ann.title = id
 
             if let icon = item["icon"] as? [String: Any] {
-              ann.iconInfo = icon
+              ann.icon = HeyhipMarkerIcon(map: icon)
             }
-            
-            // ⭐ 关键：从 marker 顶层读取宽高
-            if let w = item["iconWidth"] as? Double {
-                ann.iconWidth = CGFloat(w)
-            }
-            if let h = item["iconHeight"] as? Double {
-                ann.iconHeight = CGFloat(h)
-            }
-            
             
             if let popupMap = item["popup"] as? [String: Any] {
                 ann.popup = HeyhipMarkerPopup(map: popupMap)
@@ -637,7 +667,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         guard let ann = annotation as? HeyhipPointAnnotation else {
             return nil
         }
-        print("🟡 iconInfo =", ann.iconInfo ?? [:])
 
         let reuseId = "heyhip_marker"
         var view = mapView.dequeueReusableAnnotationView(
@@ -652,18 +681,18 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         }
 
         view?.annotation = ann
+//        view?.transform = .identity
         view?.canShowCallout = false
 
         // ================================
-        // ⭐ 1️⃣ 彻底清理复用状态（非常重要）
+        // ⭐ 1️⃣ 彻底清理复用状态
         // ================================
         view?.image = nil
         view?.heyhipImageURL = nil
-        view?.subviews.forEach { $0.removeFromSuperview() }
+//        view?.subviews.forEach { $0.removeFromSuperview() }
         
-        
-        let width = ann.iconWidth
-        let height = ann.iconHeight
+        let width = ann.icon?.width ?? 48
+        let height = ann.icon?.height ?? 48
 
         // ================================
         // ⭐ 3️⃣ 设置 AnnotationView 尺寸
@@ -673,64 +702,64 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         // marker 底部对齐经纬度
         view?.centerOffset = CGPoint(x: 0, y: -height / 2)
-
+        
         // ================================
-        // ⭐ 4️⃣ 创建真正的 ImageView
+        // ⭐ 5️⃣ 加载 icon
         // ================================
-        let imageView = UIImageView(frame: view!.bounds)
-        imageView.contentMode = .scaleAspectFit
-        imageView.clipsToBounds = true
-        imageView.isUserInteractionEnabled = false
+        if let icon = ann.icon {
 
-        view?.addSubview(imageView)
+            switch icon.type {
 
-        // ================================
-        // ⭐ 5️⃣ 加载 icon（重点修改点）
-        // ================================
-        if let iconInfo = ann.iconInfo,
-           let type = iconInfo["type"] as? String {
-
-            switch type {
-
-            case "asset":
-                if let path = iconInfo["value"] as? String {
-                    let assetKey = registrar.lookupKey(forAsset: path)
-                    if let assetPath = Bundle.main.path(forResource: assetKey, ofType: nil),
-                       let image = UIImage(contentsOfFile: assetPath) {
-                        imageView.image = image
+                case .asset:
+                    // 本地资源
+                    let assetKey = registrar.lookupKey(forAsset: icon.value)
+                    if let path = Bundle.main.path(forResource: assetKey, ofType: nil),
+                       let image = UIImage(contentsOfFile: path) {
+                        view?.image = image.heyhip_resized(
+                            to: CGSize(width: icon.width, height: icon.height)
+                        )
                     }
-                }
+                
 
-            case "network":
-                if let urlStr = iconInfo["value"] as? String,
-                   let url = URL(string: urlStr) {
+                    case .network:
+                        if let url = URL(string: icon.value) {
+                            view?.heyhipImageURL = url
 
-                    view?.heyhipImageURL = url
-                    imageView.image = nil
+                            SDWebImageManager.shared.loadImage(
+                                with: url,
+                                options: [.retryFailed],
+                                progress: nil
+                            ) { [weak view] image, _, _, _, _, _ in
+                                DispatchQueue.main.async {
+                                    // ✅ 防止复用错位
+                                    guard view?.heyhipImageURL == url else { return }
 
-                    SDWebImageManager.shared.loadImage(
-                        with: url,
-                        options: [.retryFailed, .scaleDownLargeImages],
-                        progress: nil
-                    ) { [weak view, weak imageView] image, _, _, _, _, _ in
-                        DispatchQueue.main.async {
-                            guard view?.heyhipImageURL == url else { return }
-                            imageView?.image = image
+                                    // ✅ 用下载回来的 image，而不是 UIImage(named:)
+                                    if let image = image {
+                                        view?.image = image.heyhip_resized(
+                                            to: CGSize(width: icon.width, height: icon.height)
+                                        )
+                                    }
+                                }
+                            }
                         }
+
+
+                case .base64:
+                    if let data = Data(base64Encoded: icon.value),
+                    let image = UIImage(data: data) {
+                        view?.image = image.heyhip_resized(
+                            to: CGSize(width: icon.width, height: icon.height)
+                        )
                     }
-                }
 
-            case "base64":
-                if let base64 = iconInfo["value"] as? String,
-                   let data = Data(base64Encoded: base64),
-                   let image = UIImage(data: data) {
-                    imageView.image = image
                 }
+            
+            
+                
 
-            default:
-                break
             }
-        }
+        
         
       return view
     }

@@ -159,7 +159,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_1',
       latitude: 30.482251,
       longitude: 104.080003,
-      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
+      icon: MarkerIcon.asset('assets/images/point.png'),
       popup: HeyhipMarkerPopup(
         title: "豆腐干恢复低功耗的法国",
         subtitle: "发生的固化速度发货速度发送给对方",
@@ -171,7 +171,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_2',
       latitude: 30.482351,
       longitude: 104.080103,
-      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
+      icon: MarkerIcon.asset('assets/images/point.png'),
     ),
     HeyhipMarker(
       id: 'marker_3',
@@ -202,7 +202,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_7',
       latitude: 30.4833,
       longitude: 104.0811,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.network('https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg'),
       popup: HeyhipMarkerPopup(
         title: "房管局地方各级地方规划局法规和",
         subtitle: "但是发发啊手动阀手动阀山豆根士大夫嘎斯",
@@ -212,7 +212,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_8',
       latitude: 30.49,
       longitude: 104.09,
-      icon: MarkerIcon.asset('assets/images/point.png', width: 600, height: 600),
+      icon: MarkerIcon.asset('assets/images/point.png'),
       popup: HeyhipMarkerPopup(
         title: "测试头像",
         subtitle: "这撒旦发射点",
@@ -224,7 +224,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_9',
       latitude: 30.4901,
       longitude: 104.0901,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.network('https://q6.itc.cn/q_70/images03/20250306/355fba6a5cb049f5b98c2ed9f03cc5e1.jpeg'),
       popup: HeyhipMarkerPopup(title: "测试"),
     ),
   ];
