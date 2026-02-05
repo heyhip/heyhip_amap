@@ -533,6 +533,11 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         let lat = target["latitude"] as? Double,
         let lng = target["longitude"] as? Double
       else {
+          
+          DispatchQueue.main.async {
+              result(FlutterError(code: "INVALID_ARGUMENT", message: nil, details: call.arguments))
+          }
+
         return
       }
 
@@ -563,6 +568,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             let args = call.arguments as? [String: Any],
             let markers = args["markers"] as? [[String: Any]]
         else {
+            DispatchQueue.main.async {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: nil, details: call.arguments))
+            }
             return
         }
         
@@ -665,6 +673,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
 
         guard let ann = annotation as? HeyhipPointAnnotation else {
+            
             return nil
         }
 
@@ -939,6 +948,9 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
             let args = call.arguments as? [String: Any],
             let zoom = args["zoom"] as? Double
         else {
+            DispatchQueue.main.async {
+                self.failResult(result, "INVALID_HEYHIP")
+            }
             return
         }
 
@@ -956,7 +968,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         
         DispatchQueue.main.async {
-            guard !self.isDetached else { return }
             result([
                 "latitude": center.latitude,
                 "longitude": center.longitude,
@@ -964,7 +975,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
                 "tilt": 0,
                 "bearing": self.mapView.rotationDegree
             ])
-            }
+        }
     }
 
     
@@ -974,17 +985,22 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         result: @escaping FlutterResult
     ) {
         
-        guard !self.isDetached else { return }
-        
         // ⭐ 新增：防止并发覆盖
         guard pendingPoiResult == nil else {
+            DispatchQueue.main.async {
+                self.failResult(result, "INVALID_HEYHIP")
+            }
             return
         }
+
         
         guard let args = call.arguments as? [String: Any],
               let lat = args["latitude"] as? Double,
               let lng = args["longitude"] as? Double
         else {
+            DispatchQueue.main.async {
+                self.failResult(result, "INVALID_HEYHIP")
+            }
             return
         }
 
@@ -993,8 +1009,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         let page = args["page"] as? Int ?? 1
         let pageSize = args["pageSize"] as? Int ?? 20
 
-        pendingPoiResult = result
-
         let request = AMapPOIAroundSearchRequest()
         request.location = AMapGeoPoint.location(
             withLatitude: CGFloat(lat),
@@ -1002,14 +1016,14 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         )
         request.radius = radius
         request.sortrule = 0      // 距离优先
-        request.offset = 20
         request.page = page
         request.offset = pageSize
 
         if let keyword = keyword, !keyword.isEmpty {
             request.keywords = keyword
         }
-
+        
+        pendingPoiResult = result
         searchAPI.aMapPOIAroundSearch(request)
     }
     
@@ -1019,17 +1033,22 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         call: FlutterMethodCall,
         result: @escaping FlutterResult
     ) {
-        guard !self.isDetached else { return }
-        
         // ⭐ 新增：防止并发覆盖
         guard pendingPoiResult == nil else {
+            DispatchQueue.main.async {
+                self.failResult(result, "INVALID_HEYHIP")
+            }
             return
         }
+
         
         guard
             let args = call.arguments as? [String: Any],
             let keyword = args["keyword"] as? String
         else {
+            DispatchQueue.main.async {
+                self.failResult(result, "INVALID_HEYHIP")
+            }
             return
         }
 
@@ -1071,12 +1090,13 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         response: AMapPOISearchResponse!
     ) {
         
-        guard !self.isDetached else { return }
-        
         guard let result = pendingPoiResult else { return }
         pendingPoiResult = nil
 
         guard let pois = response.pois else {
+            DispatchQueue.main.async {
+                result([])
+            }
             return
         }
 
@@ -1103,7 +1123,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
         // 4️⃣ 回传 Flutter
         DispatchQueue.main.async {
-            guard !self.isDetached else { return }
             result(list)
         }
     }
@@ -1114,8 +1133,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
       _ mapView: MAMapView,
       didSelect view: MAAnnotationView
     ) {
-        guard !self.isDetached else { return }
-        
         // ===== 0️⃣ 聚合点：什么都不做（交给 view 点击）=====
         if view.annotation?.title == "__cluster__" {
             return
@@ -1173,8 +1190,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
       for annotation: HeyhipPointAnnotation,
       from markerView: MAAnnotationView
     ) {
-        
-        guard !self.isDetached else { return }
         
         // 关闭旧的
         showingInfoWindow?.removeFromSuperview()
@@ -1265,7 +1280,6 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
       mapDidMoveByUser wasUserAction: Bool
     ) {
         
-        guard !self.isDetached else { return }
         
       guard wasUserAction else { return }
 
@@ -1293,8 +1307,7 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
 
     
     private func startDisplayLink() {
-        guard !self.isDetached else { return }
-        
+
       stopDisplayLink()
 
       displayLink = CADisplayLink(
@@ -1340,21 +1353,25 @@ public class HeyhipAmapView: NSObject, FlutterPlatformView, MAMapViewDelegate, A
         _ method: String,
         arguments: Any? = nil
     ) {
-        
-        guard !isDetached else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             guard !self.isDetached else { return }
             self.channel.invokeMethod(method, arguments: arguments)
         }
     }
+    
+    private func failResult(
+      _ result: FlutterResult,
+      _ code: String,
+      _ message: String? = nil,
+      _ details: Any? = nil
+    ) {
+      result(FlutterError(code: code, message: message, details: details))
+    }
+
 
 
     private func handleDetach(result: @escaping FlutterResult) {
-        if isDetached {
-            return
-        }
-        isDetached = true
         
         stopDisplayLink()
         pendingPoiResult = nil

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:heyhip_amap/heyhip_location.dart';
+
 import 'heyhip_amap_platform_interface.dart';
 export 'heyhip_amap_view.dart';
 
@@ -45,12 +47,12 @@ class HeyhipAmap {
   }
 
   // 请求权限
-  static Future<bool> requestLocationPermission() {
+  static Future<void> requestLocationPermission() {
     return HeyhipAmapPlatform.instance.requestLocationPermission();
   }
 
   // 获取当前定位
-  static Future<Map<String, dynamic>?> getCurrentLocation() {
+  static Future<HeyhipLocation?> getCurrentLocation() {
     return HeyhipAmapPlatform.instance.getCurrentLocation();
   }
 }

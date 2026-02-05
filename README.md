@@ -81,6 +81,18 @@ Basic Usage
 HeyhipAmapController? mapController;
 
 
+
+定位
+final has = await HeyhipAmap.hasLocationPermission();
+   
+if (has) {
+  final res = await HeyhipAmap.getCurrentLocation();
+} else {
+  HeyhipAmap.requestLocationPermission();
+}
+
+
+地图打点
 final List<HeyhipMarker> markers = [
     HeyhipMarker(
       id: 'marker_1',

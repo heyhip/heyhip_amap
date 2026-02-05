@@ -1,3 +1,4 @@
+import 'package:heyhip_amap/heyhip_location.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'heyhip_amap_method_channel.dart';
@@ -43,8 +44,8 @@ abstract class HeyhipAmapPlatform extends PlatformInterface {
   Future<bool> hasLocationPermission();
 
   // 请求权限
-  Future<bool> requestLocationPermission();
+  Future<void> requestLocationPermission();
 
   // 获取当前定位
-  Future<Map<String, dynamic>?> getCurrentLocation();
+  Future<HeyhipLocation?> getCurrentLocation();
 }

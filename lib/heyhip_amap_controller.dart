@@ -71,6 +71,8 @@ class HeyhipAmapController {
       switch (call.method) {
         case 'onMapLoaded':
           markMapReady();
+              // ✅ 通知外部：地图真正 ready
+            _onMapLoaded?.call();
           break;
 
         case 'onMarkerClick':
@@ -154,9 +156,6 @@ class HeyhipAmapController {
       _initialZoom = null;
     }
 
-    // ✅ 通知外部：地图真正 ready
-    _onMapLoaded?.call();
-
     // ⭐ 回放所有缓存操作
     for (final action in _pendingActions) {
       if (_disposed) break;
@@ -166,7 +165,7 @@ class HeyhipAmapController {
   }
 
   // 注册高德地图完成
-  void onMapLoadFinish(VoidCallback callback) {
+  void onMapLoaded(VoidCallback callback) {
     _onMapLoaded = callback;
   }
 
@@ -236,13 +235,17 @@ class HeyhipAmapController {
   }
 
   /// 获取当前相机位置
-  Future<Map<String, dynamic>> getCameraPosition() async {
+  Future<CameraPosition?> getCameraPosition() async {
     if (_disposed || _channel == null) {
-      return Map();
+      return null;
     }
 
-    final result = await _channel!.invokeMethod<Map>('getCameraPosition');
-    return Map<String, dynamic>.from(result ?? {});
+    final raw = await _channel!.invokeMethod<Map>('getCameraPosition');
+    if (raw == null) return null;
+
+    final map = Map<String, dynamic>.from(raw);
+
+    return CameraPosition.fromMap(map);
   }
 
   // 设置Markers
@@ -289,8 +292,10 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
+    print(_disposed);
+    print(_channel);
     if (_disposed || _channel == null) return [];
-
+print("开始啦得到的");
     final result = await _channel!.invokeMethod<List<dynamic>>(
       'searchPoisByLatLng',
       {
@@ -302,7 +307,8 @@ class HeyhipAmapController {
         'pageSize': pageSize,
       },
     );
-
+    print("搜索是山山水水");
+print(result?.length);
     if (_disposed || result == null) return [];
 
     return result

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heyhip_amap/heyhip_location.dart';
 
 import 'heyhip_amap_platform_interface.dart';
 
@@ -51,13 +52,18 @@ class MethodChannelHeyhipAmap extends HeyhipAmapPlatform {
   }
 
   @override
-  Future<bool> requestLocationPermission() async {
-    return await methodChannel.invokeMethod('requestLocationPermission');
+  Future<void> requestLocationPermission() async {
+    await methodChannel.invokeMethod('requestLocationPermission');
   }
 
   @override
-  Future<Map<String, dynamic>?> getCurrentLocation() async {
-    final result = await methodChannel.invokeMethod('getCurrentLocation');
-    return Map<String, dynamic>.from(result);
+  Future<HeyhipLocation?> getCurrentLocation() async {
+      final result = await methodChannel.invokeMethod<Map>('getCurrentLocation');
+
+      if (result == null) return null;
+
+      return HeyhipLocation.fromMap(
+        Map<String, dynamic>.from(result),
+      );
   }
 }

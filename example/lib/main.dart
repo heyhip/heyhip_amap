@@ -69,8 +69,8 @@ class _MyAppState extends State<MyApp> {
     debugPrint('已有权限: $has');
 
     if (has != true) {
-      final granted = await HeyhipAmap.requestLocationPermission();
-      debugPrint('申请结果: $granted');
+      await HeyhipAmap.requestLocationPermission();
+      // debugPrint('申请结果: $granted');
     }
   }
 
@@ -78,9 +78,8 @@ class _MyAppState extends State<MyApp> {
     final location = await HeyhipAmap.getCurrentLocation();
     print('定位结果: $location');
     if (location != null) {
-      final latitude = location['latitude'] as double;
-      final longitude = location['longitude'] as double;
-
+      final latitude = location.latitude;
+      final longitude = location.longitude;
       // HeyhipAmap.moveCamera(
       //   latitude: latitude,
       //   longitude: longitude,
@@ -265,7 +264,7 @@ class _MyAppState extends State<MyApp> {
                     // controller: mapController,
                     onMapCreated: (constroller) {
                       mapController = constroller;
-                      constroller.onMapLoadFinish(() {
+                      constroller.onMapLoaded(() {
                         print("地图完成");
 
                         // constroller.setMarkers(markers);
