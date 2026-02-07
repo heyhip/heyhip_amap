@@ -33,14 +33,10 @@ android {
 
     defaultConfig {
         minSdk = 24
-
-        ndk {
-            abiFilters "arm64-v8a"
-        }
     }
 
 
-    // 🔥🔥🔥 关键 1：声明 so 所在目录
+    // 声明 so 所在目录
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
@@ -48,14 +44,6 @@ android {
     }
 
     dependencies {
-        // implementation fileTree(include: ['*.jar'], dir: 'libs')
-        // // 🔥🔥🔥 关键 3：显式引入你下载的高德 SDK
-        // implementation files(
-        //         'libs/AMap3DMap_10.1.700_AMapSearch_9.7.4_AMapLocation_6.5.1_20260122.jar'
-        // )
-        // implementation fileTree(dir: 'libs', include: ['*.jar'])
-        // implementation 'com.amap.api:3dmap-location-search:10.1.200_loc6.4.9_sea9.7.4'
-
         // ✅ 高德
         // implementation 'com.amap.api:3dmap-location-search:latest.integration'
         // implementation 'com.amap.api:3dmap:latest.integration'
@@ -98,9 +86,6 @@ android {
     }
 }
 
-// dependencies {
-//     implementation fileTree(include: ['*.jar'], dir: 'libs')
-// }
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
