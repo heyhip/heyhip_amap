@@ -1,0 +1,10 @@
+# Flutter 插件：只把 Dart 当主语言
+android/** linguist-vendored
+ios/** linguist-vendored
+example/** linguist-vendored
+
+# 如果有多平台
+macos/** linguist-vendored
+windows/** linguist-vendored
+linux/** linguist-vendored
+web/** linguist-vendored
