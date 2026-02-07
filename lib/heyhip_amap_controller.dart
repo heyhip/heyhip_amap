@@ -292,10 +292,9 @@ class HeyhipAmapController {
     int page = 1,
     int pageSize = 20,
   }) async {
-    print(_disposed);
-    print(_channel);
+
     if (_disposed || _channel == null) return [];
-print("开始啦得到的");
+
     final result = await _channel!.invokeMethod<List<dynamic>>(
       'searchPoisByLatLng',
       {
@@ -307,8 +306,7 @@ print("开始啦得到的");
         'pageSize': pageSize,
       },
     );
-    print("搜索是山山水水");
-print(result?.length);
+
     if (_disposed || result == null) return [];
 
     return result

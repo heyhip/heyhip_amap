@@ -17,6 +17,9 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin, CLLocationManagerDelegat
 
 
   public static func register(with registrar: FlutterPluginRegistrar) {
+      
+      AMapServices.shared().enableHTTPS = true
+      
     let channel = FlutterMethodChannel(name: "heyhip_amap", binaryMessenger: registrar.messenger())
     let instance = HeyhipAmapPlugin()
 
@@ -64,7 +67,6 @@ public class HeyhipAmapPlugin: NSObject, FlutterPlugin, CLLocationManagerDelegat
           }
     
         AMapServices.shared().apiKey = key
-//        AMapServices.shared().enableHTTPS = true
 
       result(nil)
 
