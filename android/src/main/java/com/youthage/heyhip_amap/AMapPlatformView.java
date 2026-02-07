@@ -11,6 +11,7 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,17 +33,17 @@ import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.Poi;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.youthage.heyhip_amap.model.HeyhipMarkerIconModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerIcon;
 import com.youthage.heyhip_amap.model.HeyhipMarkerModel;
-import com.youthage.heyhip_amap.model.HeyhipMarkerPopupModel;
+import com.youthage.heyhip_amap.model.HeyhipMarkerPopup;
 import com.youthage.heyhip_amap.model.MarkerTag;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,14 +57,23 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 
+// import com.amap.api.services.core.LatLonPoint;
+// import com.amap.api.services.poisearch.PoiResult;
+// import com.amap.api.services.poisearch.PoiSearch;
 import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiSearch;
-import com.amap.api.services.poisearch.PoiItem;
+
+// import com.amap.api.services.poisearch.PoiItem;
+// import com.amap.api.services.core.PoiItem;
+
 
 
 
 public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallHandler {
+
+    private final Context applicationContext;
 
     private int viewId;
     private MapView mapView;
@@ -81,7 +91,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     // 是否开启持续移动
     private boolean enableCameraMoving = false;
-    
+
+
 
 
 
@@ -145,6 +156,9 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
 
 
     public AMapPlatformView(Context context, int id, Map<String, Object> params) {
+
+        this.applicationContext = context.getApplicationContext();
+
         this.viewId = id;
 
         // 1️⃣ 创建 MapView
@@ -194,6 +208,18 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             }
         });
 
+        // ✅ 监听建筑 / POI 点击
+        aMap.setOnPOIClickListener(new AMap.OnPOIClickListener() {
+            @Override
+            public void onPOIClick(Poi poi) {
+                if (poi == null || poi.getCoordinate() == null) return;
+
+                // ⭐ 当成“地图点击”处理
+                notifyMapClick(poi.getCoordinate());
+            }
+        });
+
+
         // 监听地图移动
         aMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
 
@@ -233,7 +259,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                 String titleText = null;
                 String subTitleText = null;
                 if (tag instanceof MarkerTag) {
-                    HeyhipMarkerPopupModel popup = ((MarkerTag) tag).popup;
+                    HeyhipMarkerPopup popup = ((MarkerTag) tag).popup;
                     if (popup != null) {
                         avatarText = popup.avatar;
                         titleText = popup.title;
@@ -354,7 +380,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                         : 14f;
             }
 
-            
+
 
             // 地图类型
             Object type = params.get("mapType");
@@ -732,27 +758,27 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         return BitmapDescriptorFactory.fromBitmap(scaled);
     }
 
-    private BitmapDescriptor loadFromBitmap(
-            Object value,
-            int width,
-            int height
-    ) {
-        byte[] bytes;
-
-        if (value instanceof byte[]) {
-            bytes = (byte[]) value;
-        } else if (value instanceof ByteBuffer) {
-            ByteBuffer buffer = (ByteBuffer) value;
-            bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-        } else {
-            return BitmapDescriptorFactory.defaultMarker();
-        }
-
-        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
-        return BitmapDescriptorFactory.fromBitmap(scaled);
-    }
+    // private BitmapDescriptor loadFromBitmap(
+    //         Object value,
+    //         int width,
+    //         int height
+    // ) {
+    //     byte[] bytes;
+    //
+    //     if (value instanceof byte[]) {
+    //         bytes = (byte[]) value;
+    //     } else if (value instanceof ByteBuffer) {
+    //         ByteBuffer buffer = (ByteBuffer) value;
+    //         bytes = new byte[buffer.remaining()];
+    //         buffer.get(bytes);
+    //     } else {
+    //         return BitmapDescriptorFactory.defaultMarker();
+    //     }
+    //
+    //     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+    //     Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
+    //     return BitmapDescriptorFactory.fromBitmap(scaled);
+    // }
 
 
     private BitmapDescriptor loadFromBase64(
@@ -810,6 +836,8 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                             marker.setIcon(
                                     BitmapDescriptorFactory.fromBitmap(bitmap)
                             );
+                            marker.setAnchor(0.5f, 1.0f);
+                            // marker.setInfoWindowAnchor(0.5f, 0f);
                         } catch (Exception ignore) {
                             // marker 已被 remove（diff 场景）
                         }
@@ -862,6 +890,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         result.success(null);
     }
 
+
     // 设置Marker
     @SuppressWarnings("unchecked")
     private void handleSetMarkers(MethodCall call, MethodChannel.Result result) {
@@ -896,6 +925,28 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         result.success(null);
     }
 
+    private boolean isSameMarkers(
+            List<HeyhipMarkerModel> oldList,
+            List<HeyhipMarkerModel> newList
+    ) {
+        if (oldList == null || newList == null) return false;
+        if (oldList.size() != newList.size()) return false;
+
+        Map<String, LatLng> map = new HashMap<>();
+        for (HeyhipMarkerModel m : oldList) {
+            map.put(m.id, m.latLng);
+        }
+
+        for (HeyhipMarkerModel m : newList) {
+            LatLng old = map.get(m.id);
+            if (old == null) return false;
+            if (!old.equals(m.latLng)) return false;
+        }
+
+        return true;
+    }
+
+
     // 刷新聚合
     private void refreshClusters(List<HeyhipMarkerModel> list) {
         if (disposed || detached) return;
@@ -910,8 +961,11 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         boolean sameGrid = gridSize == lastGridSize;
         LatLngBounds currentBounds = getVisibleBounds();
 
+        boolean sameMarkers = isSameMarkers(lastMarkers, list);
+
         if (sameZoom
                 && sameGrid
+                && sameMarkers
                 && isSameBounds(lastVisibleBounds, currentBounds)) {
             return;
         }
@@ -952,7 +1006,6 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         // 渲染 clusters
         // =====================================================
         for (Cluster cluster : clusters) {
-
             // ---------- 单点 ----------
             if (cluster.items.size() == 1) {
 
@@ -968,7 +1021,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                             new MarkerOptions()
                                     .position(item.latLng)
                                     .icon(buildItemIcon(model.icon))
+                                    .anchor(0.5f, 1.0f)
                     );
+
+                    // marker.setInfoWindowAnchor(0.5f, 0f);
 
                     marker.setObject(new MarkerTag(model.id, model.popup));
 
@@ -984,10 +1040,12 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
                         && model.icon != null
                         && "network".equals(model.icon.type)) {
 
+                    int widthPx = dpToPx(model.icon.width);
+                    int heightPx = dpToPx(model.icon.height);
                     loadFromNetwork(
                             (String) model.icon.value,
-                            model.icon.width,
-                            model.icon.height,
+                            widthPx,
+                            heightPx,
                             marker
                     );
                 }
@@ -1078,40 +1136,43 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         return null;
     }
 
-    // private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerModel model) {
-    private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerIconModel icon) {
 
-        // HeyhipMarkerIconModel icon = model.icon;
+    private int dpToPx(float dp) {
+        float density = mapView.getContext()
+                .getResources()
+                .getDisplayMetrics()
+                .density;
+        return Math.round(dp * density);
+    }
+
+    private BitmapDescriptor buildItemIcon(@NonNull HeyhipMarkerIcon icon) {
+
         if (icon == null) {
             return BitmapDescriptorFactory.defaultMarker();
         }
 
+        int widthPx = dpToPx(icon.width);
+        int heightPx = dpToPx(icon.height);
+
         try {
             switch (icon.type) {
 
-                case "asset":
+                case asset:
                     return loadFromAsset(
-                            (String) icon.value,
-                            icon.width,
-                            icon.height
-                    );
-
-                case "base64":
-                    return loadFromBase64(
-                            (String) icon.value,
-                            icon.width,
-                            icon.height
-                    );
-
-                case "bitmap":
-                    return loadFromBitmap(
                             icon.value,
-                            icon.width,
-                            icon.height
+                            widthPx,
+                            heightPx
                     );
 
-                case "network":
-                    // 先占位，真正图片异步加载
+                case base64:
+                    return loadFromBase64(
+                            icon.value,
+                            widthPx,
+                            heightPx
+                    );
+
+                case network:
+                    // 占位，真实图片异步更新 marker
                     return BitmapDescriptorFactory.defaultMarker();
 
                 default:
@@ -1121,6 +1182,7 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
             return BitmapDescriptorFactory.defaultMarker();
         }
     }
+
 
 
     // 转世界坐标
@@ -1386,13 +1448,10 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         result.success(null);
     }
 
+    private void handleSearchPoisByLatLng(MethodCall call, MethodChannel.Result result) {
 
-    private void handleSearchPoisByLatLng(
-        MethodCall call,
-        MethodChannel.Result result
-    ) {
-        if (mapView == null) {
-            result.error("NO_CONTEXT", "mapView is null", null);
+        if (applicationContext == null) {
+            result.error("NO_CONTEXT", "Application context not available", null);
             return;
         }
 
@@ -1404,201 +1463,185 @@ public class AMapPlatformView implements PlatformView, MethodChannel.MethodCallH
         Integer pageSize = call.argument("pageSize");
 
         if (latitude == null || longitude == null) {
-            result.error("INVALID_PARAM", "latitude or longitude is null", null);
+            result.error("INVALID_ARGS", "latitude & longitude required", null);
             return;
         }
 
-        if (radius == null) radius = 1000;
-        if (page == null) page = 1;
-        if (pageSize == null) pageSize = 20;
+        if (radius == null || radius <= 0) radius = 1000;
+        if (page == null || page < 1) page = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
         if (keyword == null) keyword = "";
 
-        // =========================
-        // 1️⃣ 构建查询条件
-        // =========================
-        PoiSearch.Query query = new PoiSearch.Query(
-                keyword,   // 关键字
-                "",        // POI 类型（空=全部）
-                ""         // 城市（空=全国）
-        );
+        try {
+            PoiSearch.Query query = new PoiSearch.Query(
+                    keyword,
+                    "",
+                    ""
+            );
+            query.setPageNum(page - 1);
+            query.setPageSize(pageSize);
 
-        query.setPageSize(pageSize);
-        query.setPageNum(page - 1); // ⚠️ Android 从 0 开始
+            PoiSearch poiSearch = new PoiSearch(applicationContext, query);
+            poiSearch.setBound(
+                    new PoiSearch.SearchBound(
+                            new LatLonPoint(latitude, longitude),
+                            radius,
+                            true
+                    )
+            );
 
-        // =========================
-        // 2️⃣ 周边搜索
-        // =========================
-        LatLonPoint center =
-                new LatLonPoint(latitude, longitude);
+            poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+                @Override
+                public void onPoiSearched(PoiResult poiResult, int errorCode) {
 
-        PoiSearch poiSearch =
-                new PoiSearch(mapView.getContext(), query);
-
-        poiSearch.setBound(
-                new PoiSearch.SearchBound(center, radius)
-        );
-
-        // =========================
-        // 3️⃣ 异步回调
-        // =========================
-        poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
-            @Override
-            public void onPoiSearched(PoiResult poiResult, int errorCode) {
-
-                if (disposed || detached) return;
-
-
-                if (errorCode != 1000 || poiResult == null) {
-                    result.error(
-                            "SEARCH_FAILED",
-                            "Poi search failed, code=" + errorCode,
-                            null
-                    );
-                    return;
-                }
-
-                List<Map<String, Object>> pois = new ArrayList<>();
-
-                for (PoiItem poi : poiResult.getPois()) {
-
-                    Map<String, Object> map = new HashMap<>();
-
-                    map.put("id", poi.getPoiId());
-                    map.put("name", poi.getTitle());
-                    map.put("address", poi.getSnippet());
-
-                    if (poi.getLatLonPoint() != null) {
-                        map.put("latitude", poi.getLatLonPoint().getLatitude());
-                        map.put("longitude", poi.getLatLonPoint().getLongitude());
+                    if (errorCode != 1000 || poiResult == null || poiResult.getPois() == null) {
+                        result.success(new ArrayList<>());
+                        return;
                     }
 
-                    // ⭐ 距离（单位：米）
-                    map.put("distance", poi.getDistance() > 0 ? poi.getDistance() : null);
+                    List<Map<String, Object>> list = new ArrayList<>();
 
-                    // ⭐ 类型
-                    map.put("type", poi.getTypeDes());
+                    for (PoiItem poi : poiResult.getPois()) {
 
-                    pois.add(map);
+                        Map<String, Object> map = new HashMap<>();
+
+                        map.put("id", poi.getPoiId());
+                        map.put("name", poi.getTitle());
+
+                        if (poi.getLatLonPoint() != null) {
+                            map.put("latitude", poi.getLatLonPoint().getLatitude());
+                            map.put("longitude", poi.getLatLonPoint().getLongitude());
+                        } else {
+                            map.put("latitude", 0.0);
+                            map.put("longitude", 0.0);
+                        }
+
+                        map.put("address", poi.getSnippet());
+                        map.put("type", poi.getTypeDes());
+                        map.put("distance", poi.getDistance());
+                        map.put("pcode", poi.getProvinceCode());
+                        map.put("adcode", poi.getAdCode());
+
+                        list.add(map);
+                    }
+
+                    result.success(list);
                 }
 
-                result.success(pois);
-            }
+                @Override
+                public void onPoiItemSearched(PoiItem poiItem, int rCode) {
+                    // Android POI 搜索不使用这个回调，留空即可
+                }
+            });
 
-            @Override
-            public void onPoiItemSearched(PoiItem poiItem, int i) {
-                // 单 POI 搜索不用
-            }
-        });
+            poiSearch.searchPOIAsyn();
 
-        poiSearch.searchPOIAsyn();
+        } catch (Exception e) {
+            result.error("POI_SEARCH_EXCEPTION", e.getMessage(), null);
+        }
     }
 
 
-    private void handleSearchPoisByText(
-        MethodCall call,
-        MethodChannel.Result result
-    ) {
-        if (mapView == null) {
-            result.error("NO_CONTEXT", "mapView is null", null);
+
+    private void handleSearchPoisByText(MethodCall call, MethodChannel.Result result) {
+
+        if (applicationContext == null) {
+            result.error("NO_CONTEXT", "Application context not available", null);
             return;
         }
 
         String keyword = call.argument("keyword");
         String city = call.argument("city");
         Boolean cityLimit = call.argument("cityLimit");
+        Double latitude = call.argument("latitude");
+        Double longitude = call.argument("longitude");
         Integer page = call.argument("page");
         Integer pageSize = call.argument("pageSize");
 
-        Double latitude = call.argument("latitude");   // 可选
-        Double longitude = call.argument("longitude"); // 可选
-
-        if (TextUtils.isEmpty(keyword)) {
-            result.error("INVALID_PARAM", "keyword is empty", null);
+        if (keyword == null || keyword.trim().isEmpty()) {
+            result.error("INVALID_ARGS", "keyword required", null);
             return;
         }
 
-        if (page == null) page = 1;
-        if (pageSize == null) pageSize = 20;
+        if (page == null || page < 1) page = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 20;
         if (cityLimit == null) cityLimit = false;
 
-        // =========================
-        // 1️⃣ 构建 Query（核心）
-        // =========================
-        PoiSearch.Query query = new PoiSearch.Query(
-                keyword,   // 关键字
-                "",        // POI 类型（空=全部）
-                city       // 城市（可空）
-        );
-
-        query.setPageSize(pageSize);
-        query.setPageNum(page - 1); // ⚠️ Android 从 0 开始
-        query.setCityLimit(cityLimit);
-
-        // =========================
-        // 2️⃣ 创建 PoiSearch（⚠️ 不要 setBound）
-        // =========================
-        PoiSearch poiSearch =
-                new PoiSearch(mapView.getContext(), query);
-
-        // ⭐ 可选：仅用于排序（不是周边）
-        if (latitude != null && longitude != null) {
-            poiSearch.setLocation(
-                    new LatLonPoint(latitude, longitude)
+        try {
+            PoiSearch.Query query = new PoiSearch.Query(
+                    keyword,
+                    "",
+                    city == null ? "" : city
             );
-        }
+            query.setPageNum(page - 1);
+            query.setPageSize(pageSize);
+            query.setCityLimit(cityLimit);
 
-        // =========================
-        // 3️⃣ 回调
-        // =========================
-        poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
-            @Override
-            public void onPoiSearched(PoiResult poiResult, int errorCode) {
+            PoiSearch poiSearch = new PoiSearch(applicationContext, query);
 
-                if (errorCode != 1000 || poiResult == null) {
-                    result.error(
-                            "SEARCH_FAILED",
-                            "Poi text search failed, code=" + errorCode,
-                            null
-                    );
-                    return;
-                }
+            if (latitude != null && longitude != null) {
+                poiSearch.setBound(
+                        new PoiSearch.SearchBound(
+                                new LatLonPoint(latitude, longitude),
+                                50000,
+                                true
+                        )
+                );
+            }
 
-                List<Map<String, Object>> pois = new ArrayList<>();
+            poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+                @Override
+                public void onPoiSearched(PoiResult poiResult, int errorCode) {
 
-                for (PoiItem poi : poiResult.getPois()) {
-
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", poi.getPoiId());
-                    map.put("name", poi.getTitle());
-                    map.put("address", poi.getSnippet());
-                    map.put("type", poi.getTypeDes());
-
-                    if (poi.getLatLonPoint() != null) {
-                        map.put("latitude", poi.getLatLonPoint().getLatitude());
-                        map.put("longitude", poi.getLatLonPoint().getLongitude());
+                    if (errorCode != 1000 || poiResult == null || poiResult.getPois() == null) {
+                        result.success(new ArrayList<>());
+                        return;
                     }
 
-                    // ⚠️ Text Search 下 distance 可能为 0
-                    map.put("distance", poi.getDistance() > 0 ? poi.getDistance() : null);
+                    List<Map<String, Object>> list = new ArrayList<>();
 
+                    for (PoiItem poi : poiResult.getPois()) {
 
-                    map.put("pcode", poi.getPcode());
-                    map.put("adcode", poi.getAdCode());
+                        Map<String, Object> map = new HashMap<>();
 
-                    pois.add(map);
+                        map.put("id", poi.getPoiId());
+                        map.put("name", poi.getTitle());
+
+                        if (poi.getLatLonPoint() != null) {
+                            map.put("latitude", poi.getLatLonPoint().getLatitude());
+                            map.put("longitude", poi.getLatLonPoint().getLongitude());
+                        } else {
+                            map.put("latitude", 0.0);
+                            map.put("longitude", 0.0);
+                        }
+
+                        map.put("address", poi.getSnippet());
+                        map.put("type", poi.getTypeDes());
+                        map.put("distance", poi.getDistance());
+                        map.put("pcode", poi.getProvinceCode());
+                        map.put("adcode", poi.getAdCode());
+
+                        list.add(map);
+                    }
+
+                    result.success(list);
                 }
 
-                result.success(pois);
-            }
+                @Override
+                public void onPoiItemSearched(PoiItem poiItem, int rCode) {
+                    // Android POI 搜索不使用这个回调，留空即可
+                }
+            });
 
-            @Override
-            public void onPoiItemSearched(PoiItem poiItem, int i) {
-                // 不用
-            }
-        });
+            poiSearch.searchPOIAsyn();
 
-        poiSearch.searchPOIAsyn();
+        } catch (Exception e) {
+            result.error("POI_SEARCH_EXCEPTION", e.getMessage(), null);
+        }
     }
+
+
+
 
 
 

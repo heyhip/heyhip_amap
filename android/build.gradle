@@ -39,18 +39,36 @@ android {
         }
     }
 
+
+    // 🔥🔥🔥 关键 1：声明 so 所在目录
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
     dependencies {
+        // implementation fileTree(include: ['*.jar'], dir: 'libs')
+        // // 🔥🔥🔥 关键 3：显式引入你下载的高德 SDK
+        // implementation files(
+        //         'libs/AMap3DMap_10.1.700_AMapSearch_9.7.4_AMapLocation_6.5.1_20260122.jar'
+        // )
+        // implementation fileTree(dir: 'libs', include: ['*.jar'])
+        // implementation 'com.amap.api:3dmap-location-search:10.1.200_loc6.4.9_sea9.7.4'
 
         // ✅ 高德
+        // implementation 'com.amap.api:3dmap-location-search:latest.integration'
         // implementation 'com.amap.api:3dmap:latest.integration'
-        // 高德基础库
-        implementation 'com.amap.api:base:3.8.0'
 
-        // 3D 地图（核心）
-        implementation 'com.amap.api:3dmap:9.8.3'
+        // /// 坑爹的找不到下面的库
+        // // 高德基础库
+        // implementation 'com.amap.api:base:3.8.0'
 
-        // 搜索（POI / 周边 / 逆地理）
-        implementation 'com.amap.api:search:9.7.4'
+        // // 3D 地图（核心）
+        // implementation 'com.amap.api:3dmap:9.8.3'
+
+        // // 搜索（POI / 周边 / 逆地理）
+        // implementation 'com.amap.api:search:9.7.4'
 
         /*
         Installing AMap3DMap (10.1.600)
@@ -78,4 +96,11 @@ android {
             }
         }
     }
+}
+
+// dependencies {
+//     implementation fileTree(include: ['*.jar'], dir: 'libs')
+// }
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

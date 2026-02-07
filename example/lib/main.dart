@@ -211,7 +211,7 @@ class _MyAppState extends State<MyApp> {
       id: 'marker_8',
       latitude: 30.49,
       longitude: 104.09,
-      icon: MarkerIcon.asset('assets/images/point.png'),
+      icon: MarkerIcon.asset('assets/images/point.png', width: 150, height: 150),
       popup: HeyhipMarkerPopup(
         title: "测试头像",
         subtitle: "这撒旦发射点",

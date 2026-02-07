@@ -37,8 +37,24 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // sourceSets {
+    //     getByName("main") {
+    //         jniLibs.srcDirs("src/main/jniLibs")
+    //     }
+    // }
+
 }
 
 flutter {
     source = "../.."
 }
+
+// dependencies {
+//     implementation(
+//         files(
+//             "libs/AMap3DMap_10.1.700_AMapSearch_9.7.4_AMapLocation_6.5.1_20260122.jar"
+//         )
+//     )
+// }
+

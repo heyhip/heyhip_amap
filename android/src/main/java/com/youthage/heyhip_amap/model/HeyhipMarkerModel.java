@@ -8,16 +8,16 @@ public class HeyhipMarkerModel {
 
     public final String id;
     public final LatLng latLng;
-    public final HeyhipMarkerIconModel icon;
+    public final HeyhipMarkerIcon icon;
 
     // ⭐ 新增：popup
-    public final HeyhipMarkerPopupModel popup;
+    public final HeyhipMarkerPopup popup;
 
     private HeyhipMarkerModel(
             String id,
             LatLng latLng,
-            HeyhipMarkerIconModel icon,
-            HeyhipMarkerPopupModel popup
+            HeyhipMarkerIcon icon,
+            HeyhipMarkerPopup popup
     ) {
         this.id = id;
         this.latLng = latLng;
@@ -42,13 +42,13 @@ public class HeyhipMarkerModel {
         double lat = ((Number) latObj).doubleValue();
         double lng = ((Number) lngObj).doubleValue();
 
-        // icon（你已有）
-        HeyhipMarkerIconModel icon =
-                HeyhipMarkerIconModel.fromMap(map);
+        // icon
+        HeyhipMarkerIcon icon =
+                HeyhipMarkerIcon.fromMap(map.get("icon"));
 
-        // ⭐ popup（新增）
-        HeyhipMarkerPopupModel popup =
-                HeyhipMarkerPopupModel.fromMap(map.get("popup"));
+        // ⭐ popup
+        HeyhipMarkerPopup popup =
+                HeyhipMarkerPopup.fromMap(map.get("popup"));
 
         return new HeyhipMarkerModel(
                 id,

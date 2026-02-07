@@ -1,12 +1,10 @@
 package com.youthage.heyhip_amap.model;
 
-import java.util.Map;
-
 public class MarkerTag {
     public final String id;
-    public final HeyhipMarkerPopupModel popup;
+    public final HeyhipMarkerPopup popup;
 
-    public MarkerTag(String id, HeyhipMarkerPopupModel popup) {
+    public MarkerTag(String id, HeyhipMarkerPopup popup) {
         this.id = id;
         this.popup = popup;
     }

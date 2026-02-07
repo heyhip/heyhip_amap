@@ -41,7 +41,7 @@
         <!-- 高德map 配置 -->
         <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="" />
+            android:value="d34d4dfce1761181098d1ae3bde58a33" />
 
         <!-- 笔记本电脑 -->
         <!-- <meta-data

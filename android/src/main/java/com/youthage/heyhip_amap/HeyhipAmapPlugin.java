@@ -192,7 +192,7 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
     }
 
     if (hasLocationPermission()) {
-      result.success(true);
+      result.success(null);
       return;
     }
 
@@ -349,6 +349,7 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
       );
       option.setOnceLocation(true); // 只定位一次
       option.setNeedAddress(true);
+      option.setHttpTimeOut(10000);
 
       locationClient.setLocationOption(option);
 
@@ -364,7 +365,9 @@ public class HeyhipAmapPlugin implements FlutterPlugin, MethodCallHandler, Activ
             map.put("latitude", location.getLatitude());
             map.put("longitude", location.getLongitude());
             map.put("accuracy", location.getAccuracy());
-            map.put("address", location.getAddress());
+            map.put("speed", location.getSpeed());
+            map.put("bearing", location.getBearing());
+            map.put("timestamp", location.getTime());
 
             locationResult.success(map);
           } else {
