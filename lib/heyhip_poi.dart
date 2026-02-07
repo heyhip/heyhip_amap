@@ -1,21 +1,21 @@
 import 'camera_position.dart';
 
 class HeyhipPoi {
-  final String? id;
-  final String? name;
-  final LatLng position;
-  final String? address;
-  final String? type;
-  final double? distance;
+   String? id;
+   String? name;
+   LatLng? position;
+   String? address;
+   String? type;
+   double? distance;
 
-  final String? province;
-  final String? city;
-  final String? district;
+   String? province;
+   String? city;
+   String? district;
 
   HeyhipPoi({
     this.id,
     this.name,
-    required this.position,
+    this.position,
     this.address,
     this.type,
     this.distance,
