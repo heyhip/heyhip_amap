@@ -1,7 +1,8 @@
 # heyhip_amap
 
 一个基于 **Flutter Plugin** 的高德地图插件，支持 Android / iOS，面向真实业务场景封装。
- 
+ ios13+
+ android 24+
 ---
  
 ## 功能特性 
